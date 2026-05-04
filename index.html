@@ -1136,11 +1136,10 @@ function saveToArc(){
 // ─── GAS SEND ────────────────────────────────────────
 async function sendToGas(type){
   if(!session||!session.rows.length){ showToast('⚠️ データがありません'); return; }
-  if(!gasUrl){ showToast('⚠️ GAS URLを設定してください（ホーム→⚙️）'); openOv('ov-gas'); return; }
+  if(!gasUrl){ showToast('⚠️ GAS URLを設定してください（ホーム→⚙️）'); showWizard(); return; }
 
   showToast(type==='excel' ? '📊 Excel生成中…' : '📄 PDF生成中…','warn');
 
-  // Build payload - strip large base64 to manageable JSON
   const payload={
     type,
     owner: session.owner,
@@ -1157,24 +1156,28 @@ async function sendToGas(type){
   };
 
   try {
-    const res=await fetch(gasUrl,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(payload)
-    });
-    const json=await res.json();
+    // GASはCORSの制限があるためno-corsで送信しGoogleドライブのURLを別途取得
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    const url = gasUrl + '?data=' + encoded;
+
+    const res = await fetch(url, { method: 'GET' });
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); } catch(e){ json = {}; }
+
     if(json.url){
       saveToArc();
-      showToast('✅ 生成完了！リンクを開きます','ok');
+      showToast('✅ 生成完了！', 'ok');
       setTimeout(()=> window.open(json.url,'_blank'), 800);
     } else if(json.error){
-      showToast('❌ エラー：'+json.error);
+      showToast('❌ ' + json.error);
+      console.error('GAS error:', json.error);
     } else {
-      showToast('✅ 送信完了','ok');
+      showToast('✅ 送信完了', 'ok');
     }
   } catch(err){
     showToast('❌ 通信エラー。GAS URLを確認してください');
-    console.error(err);
+    console.error('fetch error:', err);
   }
 }
 
