@@ -284,6 +284,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   background:none;color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)}
 .wiz-warn{background:#fff8e1;border:1px solid var(--warn);border-radius:8px;
   padding:9px 12px;font-size:11px;color:var(--warn);line-height:1.6;margin-bottom:10px}
+.wiz-action-banner{background:var(--navy);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.wiz-action-num{background:#fff;color:var(--navy);font-size:10px;font-weight:900;padding:3px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0}
+.wiz-action-txt{color:#fff;font-size:13px;font-weight:700;line-height:1.4}
 .gas-inp{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:7px;
   font-family:var(--font);font-size:12px;padding:8px 10px;outline:none;color:var(--text);margin-bottom:6px}
 .gas-inp:focus{border-color:var(--navy)}
@@ -1414,76 +1417,92 @@ function showToast(msg,cls=''){
       <!-- Step 0: ようこそ -->
       <div class="wiz-step on" id="ws0">
         <div class="wiz-desc">
-          このアプリを使うには<strong>GAS（Google Apps Script）</strong>の初期設定が必要です。<br><br>
-          設定すると、写真込みのExcel・PDFが<strong>あなた自身のGoogleドライブ</strong>に保存されるようになります。<br><br>
-          設定は<strong>1回だけ</strong>で、次回以降はそのまま使えます。
+          写真込みの<strong>Excel・PDF</strong>を<strong>自分のGoogleドライブ</strong>に保存するため、初回だけ設定が必要です。設定は<strong>1回だけ</strong>で完了します。
         </div>
         <div class="wiz-box">
-          <div class="wiz-box-title">この設定でできること</div>
+          <div class="wiz-box-title">設定でできること</div>
           <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">写真込みExcel（.xlsx）の生成</div></div>
           <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">写真込みPDF（.pdf）の生成</div></div>
           <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">自分のGoogleドライブに自動保存</div></div>
           <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">完全無料（Googleアカウントのみ）</div></div>
         </div>
+        <div class="wiz-warn">📱 このあとGoogleのページを開きますが、<strong>このアプリ画面はそのまま残っています。</strong>作業後にこのアプリに戻ってきてください。</div>
       </div>
 
-      <!-- Step 1: GASを開く -->
+      <!-- Step 1: GASを開いてプロジェクト作成 -->
       <div class="wiz-step" id="ws1">
-        <div class="wiz-desc">PCまたはスマホのブラウザで<strong>Google Apps Script</strong>を開きます。</div>
-        <button class="wiz-link-btn" id="wiz-open-gas">🌐 script.google.com を開く</button>
-        <div class="wiz-box">
-          <div class="wiz-box-title">開いたら</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">Googleアカウントでログイン</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">左上「新しいプロジェクト」をクリック</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">エディタ画面が開いたら次へ</div></div>
+        <div class="wiz-action-banner">
+          <div class="wiz-action-num">今やること</div>
+          <div class="wiz-action-txt">GoogleのサイトでGASプロジェクトを新規作成する</div>
         </div>
+        <div class="wiz-box">
+          <div class="wiz-box-title">手順（別画面で行います）</div>
+          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">下の「GASを開く」ボタンをタップ<br><span style="color:var(--text3);font-size:10px">→ 別タブでGoogleのページが開きます</span></div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">Googleアカウントでログイン</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">左上「<strong>新しいプロジェクト</strong>」をタップ</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">4</div><div class="wiz-step-txt">コードエディタが開いたら<strong>このアプリに戻る</strong></div></div>
+        </div>
+        <button class="wiz-link-btn" id="wiz-open-gas">🌐 GASを開く（別タブで開きます）</button>
+        <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:4px">GASを開いたら、このアプリに戻って「次へ」を押してください</div>
       </div>
 
-      <!-- Step 2: コードをコピー -->
+      <!-- Step 2: コードをコピーして貼り付け -->
       <div class="wiz-step" id="ws2">
-        <div class="wiz-desc">エディタに最初から書いてある<code>function myFunction() {}</code>を<strong>全部削除</strong>して、下のボタンでコードをコピーして<strong>貼り付け</strong>てください。</div>
-        <button class="wiz-copy-btn" id="wiz-copy-btn">📋 GASコードをコピー</button>
-        <div class="wiz-box">
-          <div class="wiz-box-title">貼り付け後</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">Ctrl+S（MacはCmd+S）で保存</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">プロジェクト名は何でもOK（例：現場検査GAS）</div></div>
+        <div class="wiz-action-banner">
+          <div class="wiz-action-num">今やること</div>
+          <div class="wiz-action-txt">コードをコピーして、GASのエディタに貼り付ける</div>
         </div>
+        <div class="wiz-box">
+          <div class="wiz-box-title">手順</div>
+          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">下の「<strong>コードをコピー</strong>」ボタンをタップ<br><span style="color:var(--text3);font-size:10px">→ このアプリ上でコードがコピーされます（画面遷移なし）</span></div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">GASのタブに切り替える</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">エディタ内の文字を<strong>全選択して削除</strong><br><span style="color:var(--text3);font-size:10px">（function myFunction() {} という文字）</span></div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">4</div><div class="wiz-step-txt">コピーしたコードを<strong>貼り付け</strong>（長押し→貼り付け）</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">5</div><div class="wiz-step-txt">💾 保存ボタン（フロッピーアイコン）をタップ</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">6</div><div class="wiz-step-txt"><strong>このアプリに戻る</strong></div></div>
+        </div>
+        <button class="wiz-copy-btn" id="wiz-copy-btn">📋 コードをコピー（画面はそのまま）</button>
       </div>
 
       <!-- Step 3: デプロイ -->
       <div class="wiz-step" id="ws3">
-        <div class="wiz-desc">コードを保存したら、<strong>ウェブアプリとしてデプロイ</strong>します。</div>
+        <div class="wiz-action-banner">
+          <div class="wiz-action-num">今やること</div>
+          <div class="wiz-action-txt">GASをウェブアプリとして公開（デプロイ）する</div>
+        </div>
         <div class="wiz-box">
-          <div class="wiz-box-title">デプロイ手順</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">右上「デプロイ」ボタンをクリック</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">「新しいデプロイ」を選択</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">⚙️アイコン →「ウェブアプリ」を選択</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">4</div><div class="wiz-step-txt">「アクセスできるユーザー」を<strong style="color:var(--red)">「全員」</strong>に設定</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">5</div><div class="wiz-step-txt">「デプロイ」をクリック</div></div>
+          <div class="wiz-box-title">手順（GASのタブで行います）</div>
+          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">GASのタブに切り替えて、右上「<strong>デプロイ</strong>」をタップ</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">「<strong>新しいデプロイ</strong>」を選択</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">⚙️アイコン →「<strong>ウェブアプリ</strong>」を選択</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">4</div><div class="wiz-step-txt">「アクセスできるユーザー」→ <strong style="color:var(--red)">「全員」</strong> に変更</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">5</div><div class="wiz-step-txt">「<strong>デプロイ</strong>」ボタンをタップ</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">6</div><div class="wiz-step-txt">「<strong>アクセスを承認</strong>」→ Googleアカウントを選択 → 「<strong>許可</strong>」</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">7</div><div class="wiz-step-txt"><strong>このアプリに戻る</strong></div></div>
         </div>
-        <div class="wiz-warn">
-          ⚠️「このアプリはGoogleで確認されていません」と表示された場合：<br>
-          「詳細」→「安全ではないページに移動」→「許可」をタップしてください。自分のスクリプトなので安全です。
-        </div>
+        <div class="wiz-warn">⚠️「このアプリはGoogleで確認されていません」と出たら：<br>「<strong>詳細</strong>」→「<strong>安全ではないページに移動</strong>」→「<strong>許可</strong>」をタップ。自分のスクリプトなので安全です。</div>
       </div>
 
-      <!-- Step 4: URL入力 -->
+      <!-- Step 4: URLを貼り付け -->
       <div class="wiz-step" id="ws4">
-        <div class="wiz-desc">デプロイ完了画面に表示された<strong>ウェブアプリのURL</strong>をコピーして下に貼り付けてください。</div>
+        <div class="wiz-action-banner">
+          <div class="wiz-action-num">最後のステップ</div>
+          <div class="wiz-action-txt">デプロイ完了画面のURLをここに貼り付ける</div>
+        </div>
         <div class="wiz-box" style="margin-bottom:10px">
-          <div class="wiz-box-title">URLの形式</div>
-          <div style="font-size:11px;color:var(--text2);word-break:break-all;line-height:1.7">
-            https://script.google.com/macros/s/<strong style="color:var(--navy)">xxxxxxxxxx</strong>/exec
-          </div>
+          <div class="wiz-box-title">URLのコピー方法</div>
+          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">GASのタブに切り替える</div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">デプロイ完了画面の「ウェブアプリのURL」をコピー<br><span style="color:var(--text3);font-size:10px">https://script.google.com/macros/s/〇〇〇/exec</span></div></div>
+          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">このアプリに戻って下の欄に貼り付け</div></div>
         </div>
         <input class="wiz-url-inp" id="wiz-url-inp" type="url" placeholder="https://script.google.com/macros/s/...">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">設定後はいつでもホーム画面の⚙️から変更できます。</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">設定後はホーム画面の⚙️からいつでも変更できます。</div>
       </div>
 
     </div>
     <div class="wiz-actions">
       <button class="wiz-skip" id="wiz-skip">後で設定する</button>
-      <button class="wiz-next" id="wiz-next">次へ →</button>
+      <button class="wiz-next" id="wiz-next">設定をはじめる →</button>
     </div>
   </div>
 </div>
