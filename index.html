@@ -1186,6 +1186,17 @@ async function sendToGas(type){
     }))
   };
 
+  // デバッグログ
+  const bodyStr = JSON.stringify(payload);
+  console.log('送信データサイズ:', bodyStr.length, 'bytes');
+  console.log('rows数:', payload.rows.length);
+  payload.rows.forEach((r,i)=>{
+    const lp = r.leftPhotos.filter(p=>p&&p.length>10);
+    const rp = r.rightPhotos.filter(p=>p&&p.length>10);
+    console.log('row'+i+': 左写真'+lp.length+'枚, 右写真'+rp.length+'枚');
+    if(lp[0]) console.log('左写真0 先頭50文字:', lp[0].substring(0,50));
+  });
+
   try {
     // no-corsでPOST送信（CORSをバイパス・レスポンスは読めないがGASは処理する）
     fetch(gasUrl, {
@@ -1197,10 +1208,12 @@ async function sendToGas(type){
 
     saveToArc();
 
-    // カウントダウン表示（写真枚数に応じて待機時間を調整）
+    // GASの処理時間を待ってからGoogleドライブを確認
+    showToast('⏳ 生成中… しばらくお待ちください', 'warn');
+
     const totalPhotos = session.rows.reduce((sum,r)=>
       sum + r.LP.filter(Boolean).length + r.RP.filter(Boolean).length, 0);
-    const waitSec = Math.max(15, Math.min(60, 10 + totalPhotos * 2));
+    const waitSec = Math.max(20, Math.min(90, 15 + totalPhotos * 3));
 
     let remaining = waitSec;
     const timer = setInterval(()=>{
@@ -1211,7 +1224,6 @@ async function sendToGas(type){
         clearInterval(timer);
         document.querySelectorAll('.bbtn').forEach(b=> b.disabled=false);
         showToast('✅ 完了！Googleドライブを確認してください', 'ok');
-        // Googleドライブの現場検査記録フォルダを開く
         setTimeout(()=>{
           window.open(
             'https://drive.google.com/drive/search?q=' +
