@@ -1,27 +1,15 @@
 // Service Worker - 指摘写真生成アプリ
-const CACHE_NAME = 'shitekishashin-v2';
-const ASSETS = [
-  './index.html',
-  './manifest.json',
-  './sw.js',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
-];
+const CACHE_NAME = 'shitekishashin-v3';
 
-// インストール時にキャッシュ
+// インストール時：index.htmlのみキャッシュ
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      // 外部リソースはキャッシュ失敗しても続行
-      return cache.addAll(ASSETS).catch(() => {
-        return cache.add('./指摘写真生成アプリv5.html');
-      });
-    })
+    caches.open(CACHE_NAME).then(cache => cache.add('./index.html'))
   );
   self.skipWaiting();
 });
 
-// 古いキャッシュを削除
+// 古いキャッシュをすべて削除
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -31,27 +19,22 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// リクエスト時：キャッシュ優先、なければネットワーク
+// リクエスト時：ネットワーク優先、失敗時にキャッシュを返す
 self.addEventListener('fetch', event => {
-  // GASへのPOSTリクエストはキャッシュしない
-  if (event.request.method === 'POST') return;
-
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // 成功したレスポンスをキャッシュに追加
-        if (response && response.status === 200 && response.type !== 'opaque') {
+    fetch(event.request)
+      .then(response => {
+        if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => {
-        // オフライン時はHTMLを返す
-        if (event.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then(cached => {
+          return cached || caches.match('./index.html');
+        });
+      })
   );
 });
