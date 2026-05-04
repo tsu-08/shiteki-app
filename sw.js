@@ -1,5 +1,5 @@
 // Service Worker - 指摘写真生成アプリ
-const CACHE_NAME = 'shitekishashin-v1';
+const CACHE_NAME = 'shitekishashin-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',
