@@ -1167,15 +1167,17 @@ async function sendToGas(type){
   if(!session||!session.rows.length){ showToast('⚠️ データがありません'); return; }
   if(!gasUrl){ showToast('⚠️ GAS URLを設定してください（ホーム→⚙️）'); showWizard(); return; }
 
+  // ボタンを無効化
+  document.querySelectorAll('.bbtn').forEach(b=> b.disabled=true);
   showToast(type==='excel' ? '📊 Excel生成中…' : '📄 PDF生成中…','warn');
 
   const payload={
     type,
-    owner: session.owner,
-    date:  session.date,
-    insp1: session.insp1||'',
-    insp2: session.insp2||'',
-    inspType: session.type,
+    owner:    session.owner    || '',
+    date:     session.date     || '',
+    insp1:    session.insp1    || '',
+    insp2:    session.insp2    || '',
+    inspType: session.type     || '',
     rows: session.rows.map((row,i)=>({
       no: i+1,
       leftPhotos:  row.LP.map(p=>p||null),
@@ -1185,29 +1187,47 @@ async function sendToGas(type){
   };
 
   try {
-    // no-corsでPOST送信（CORSをバイパス）
-    // レスポンスは読めないが、GASは処理を実行する
-    await fetch(gasUrl, {
+    // no-corsでPOST送信（CORSをバイパス・レスポンスは読めないがGASは処理する）
+    fetch(gasUrl, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
+      mode:   'no-cors',
+      headers:{ 'Content-Type': 'text/plain' },
+      body:   JSON.stringify(payload)
     });
 
-    // GASの処理時間を待ってからGoogleドライブを確認
-    showToast('⏳ ファイル生成中…しばらくお待ちください', 'warn');
     saveToArc();
 
-    // 10秒待ってからGoogleドライブを開く
-    setTimeout(() => {
-      showToast('✅ 生成完了！Googleドライブを確認してください', 'ok');
-      window.open('https://drive.google.com/drive/folders/', '_blank');
-    }, 10000);
+    // カウントダウン表示（写真枚数に応じて待機時間を調整）
+    const totalPhotos = session.rows.reduce((sum,r)=>
+      sum + r.LP.filter(Boolean).length + r.RP.filter(Boolean).length, 0);
+    const waitSec = Math.max(15, Math.min(60, 10 + totalPhotos * 2));
+
+    let remaining = waitSec;
+    const timer = setInterval(()=>{
+      remaining--;
+      if(remaining > 0){
+        showToast(`⏳ 生成中… あと約${remaining}秒`, 'warn');
+      } else {
+        clearInterval(timer);
+        document.querySelectorAll('.bbtn').forEach(b=> b.disabled=false);
+        showToast('✅ 完了！Googleドライブを確認してください', 'ok');
+        // Googleドライブの現場検査記録フォルダを開く
+        setTimeout(()=>{
+          window.open(
+            'https://drive.google.com/drive/search?q=' +
+            encodeURIComponent('現場検査記録'),
+            '_blank'
+          );
+        }, 800);
+      }
+    }, 1000);
 
   } catch(err){
+    document.querySelectorAll('.bbtn').forEach(b=> b.disabled=false);
     showToast('❌ 通信エラー。GAS URLを確認してください');
     console.error('fetch error:', err);
   }
+}
 }
 
 // ─── OVERLAY ─────────────────────────────────────────
