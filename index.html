@@ -402,9 +402,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="mhandle"></div>
     <div class="mttl">💬 指摘コメントを選択</div>
     <div class="msub" id="tmpl-sub"></div>
-    <div class="tmpl-scroll" id="tmpl-list"></div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600">▼ 自由記述・編集</div>
     <textarea class="free-ta" id="tmpl-free" rows="3" placeholder="直接コメントを入力…"></textarea>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600">▼ テンプレートから選択</div>
+    <div class="tmpl-scroll" id="tmpl-list"></div>
     <div class="mrow">
       <button class="mbtn cancel" id="tmpl-cancel">キャンセル</button>
       <button class="mbtn ok" id="tmpl-ok">✅ 決定</button>
@@ -462,9 +463,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="mhandle"></div>
     <div class="mttl">✍️ 是正コメントを入力</div>
     <div class="msub" id="rtxt-sub"></div>
-    <div class="tmpl-scroll" id="rtxt-tmpl-list"></div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600">▼ 自由記述・編集</div>
     <textarea class="txt-ta" id="rtxt-ta" rows="3" placeholder="是正内容・期限など…"></textarea>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600">▼ テンプレートから選択</div>
+    <div class="tmpl-scroll" id="rtxt-tmpl-list"></div>
     <div class="mrow">
       <button class="mbtn cancel" id="rtxt-cancel">キャンセル</button>
       <button class="mbtn ok" id="rtxt-ok">✅ 入力</button>
@@ -506,19 +508,31 @@ let _rightCtx   = null; // {rid, idx}
 let _cmtTarget  = null; // {rid, side, idx} or {rid} for left comment
 let _previewFiles = [];  // File[] pending placement
 let _previewOrder = [];  // indices into _previewFiles
+let _previewSrcs  = [];  // compressed base64 data
 let _rtxtTarget = null;  // {rid, idx}
 
-const TYPES = ['配筋','上棟','基礎','防水','内装','外装','その他'];
-const DEFAULT_NAMES = ['鶴岡 諭','山田 太郎','佐藤 花子','田中 一郎'];
+const TYPES = ['配筋','アンカー','基礎','上棟・パネル完成','防水','断熱','下地','造作完了','外装','竣工','その他'];
+const DEFAULT_NAMES = ['市村 崇','市村 博','新井 潤','依田 潤一','鶴岡 諭'];
 const DEFAULT_TMPL = {
   '配筋':['かぶり厚さ不足。所定のかぶり厚さを確保すること。','鉄筋継手長さ不足。所定の継手長さを確保すること。','スペーサー配置不足。適切なスペーサーを設置すること。','鉄筋ピッチが設計と異なる。設計図通りに是正すること。','鉄筋結束不良。適切に結束し直すこと。','定着長さ不足。所定の定着長さを確保すること。','鉄筋径・本数が設計と異なる。修正すること。','ハッチ筋欠損・不足。設計通り追加設置すること。','開口補強筋施工不良。設計図通りに施工すること。','著しい鉄筋の錆・汚染。清掃または交換すること。'],
-  '上棟':['母屋下がり天井上部ねじ打ち不足。横方向に施工すること。','筋交い取り付け不良。設計図通りに取り付け直すこと。','金物締め付け不足。所定トルクで増し締めすること。','柱・梁の傾き許容値超過。垂直・水平を確認し是正すること。','防水テープ貼り付け不良。適切に貼り直すこと。','アンカーボルト位置・本数不足。設計通り是正すること。','合板釘打ちピッチ不足。所定間隔で増し打ちすること。','断熱材充填不足・脱落。適切に施工し直すこと。','通気胴縁取り付け不良。適切に取り付け直すこと。','換気口施工不良。設計図通りに是正すること。'],
-  '基礎':['コンクリートジャンカ発生。適切に補修すること。','ひび割れ（幅0.2mm以上）確認。補修方法を検討し対応すること。','アンカーボルト位置ずれ・傾き。修正または交換すること。','基礎天端レベルの不陸。所定精度内に収めること。','立上り部幅・高さ不足。設計値を確認し是正すること。','スリーブ補強不足。補強筋を追加設置すること。','防湿シート破れ・施工不良。補修または貼り直すこと。','砕石地業締固め不足。十分に転圧し直すこと。','土台水切り取り付け不良。適切に取り付け直すこと。','型枠解体時期が早すぎる。所定養生期間を守ること。'],
+  'アンカー':['アンカーボルト位置ずれ。修正または交換すること。','アンカーボルト傾き。修正または交換すること。','アンカーボルト本数不足。設計通り是正すること。','アンカーボルト埋込長さ不足。是正すること。','アンカーボルト突出長さ不足。是正すること。','ホールダウンアンカー位置ずれ。修正すること。','アンカーボルトの錆。清掃または交換すること。','アンカーボルト間隔が設計と異なる。是正すること。'],
+  '基礎':['コンクリートジャンカ発生。適切に補修すること。','ひび割れ（幅0.2mm以上）確認。補修方法を検討し対応すること。','基礎天端レベルの不陸。所定精度内に収めること。','立上り部幅・高さ不足。設計値を確認し是正すること。','スリーブ補強不足。補強筋を追加設置すること。','防湿シート破れ・施工不良。補修または貼り直すこと。','砕石地業締固め不足。十分に転圧し直すこと。','土台水切り取り付け不良。適切に取り付け直すこと。','型枠解体時期が早すぎる。所定養生期間を守ること。','基礎天端モルタルの不陸。是正すること。'],
+  '上棟・パネル完成':['母屋下がり天井上部ねじ打ち不足。横方向に施工すること。','筋交い取り付け不良。設計図通りに取り付け直すこと。','金物締め付け不足。所定トルクで増し締めすること。','柱・梁の傾き許容値超過。垂直・水平を確認し是正すること。','防水テープ貼り付け不良。適切に貼り直すこと。','合板釘打ちピッチ不足。所定間隔で増し打ちすること。','断熱材充填不足・脱落。適切に施工し直すこと。','通気胴縁取り付け不良。適切に取り付け直すこと。','換気口施工不良。設計図通りに是正すること。','パネル接合部の隙間。適切に処理すること。'],
   '防水':['バルコニー防水層の塗り残し。全面再施工すること。','防水立上り高さ不足（250mm以上確保）。所定高さを確保すること。','ドレン廻り防水処理不良。適切に補修すること。','出隅・入隅補強処理不足。メッシュ補強を追加すること。','シーリング施工不良（打ち残し・気泡等）。打ち直すこと。','笠木廻り防水処理不良。適切に補修すること。','防水重ね幅不足。所定の重ね幅を確保して補修すること。','雨押え取り付け不良。適切に取り付け直すこと。','サッシ廻り防水テープ貼り不良。適切に貼り直すこと。','防水保護モルタルひび割れ。適切に補修すること。'],
-  '内装':['クロス浮き・はがれ。適切に貼り直すこと。','クロス目地ずれ・模様の不揃い。貼り直すこと。','床材の傷・凹み・隙間。補修または交換すること。','建具建て付け不良（開閉不良）。調整すること。','巾木取り付け不良（浮き・隙間）。適切に取り付け直すこと。','天井クロスたるみ・継ぎ目不良。補修または貼り直すこと。','塗装のムラ・塗り残し。均一に塗り直すこと。','換気扇取り付け・動作確認が必要。適切に施工すること。','棚・造作家具取り付け不良。確認し適切に取り付けること。','窓廻りシーリング打ち残し。適切に施工すること。'],
+  '断熱':['断熱材の充填不足。所定の厚さに充填すること。','断熱材の脱落。適切に固定し直すこと。','断熱材の隙間・めくれ。適切に処理すること。','気密テープ貼り不良。適切に貼り直すこと。','気密シートの破れ。補修すること。','断熱材の種類・厚さが設計と異なる。是正すること。','床下断熱材の施工不良。適切に施工すること。','屋根断熱の施工不良。設計図通りに施工すること。'],
+  '下地':['下地材の取り付け不良。適切に取り付け直すこと。','下地のビスピッチ不足。所定間隔で増し打ちすること。','下地の不陸。所定精度内に是正すること。','防湿フィルムの施工不良。適切に施工すること。','下地材の腐食・損傷。交換すること。','胴縁取り付け不良。適切に取り付け直すこと。'],
+  '造作完了':['建具建て付け不良（開閉不良）。調整すること。','建具の傷・損傷。補修または交換すること。','造作家具の取り付け不良。確認し適切に取り付けること。','棚板の取り付け不良。是正すること。','階段の施工不良。適切に是正すること。','手すりの取り付け不良。適切に取り付け直すこと。','収納扉の建て付け不良。調整すること。'],
   '外装':['外壁サイディング取り付け不良（目地不均一・反り）。是正すること。','軒天取り付け不良。適切に取り付け直すこと。','雨樋勾配不良・取り付け不良。是正すること。','外壁コーキング打ち残し・剥離。適切に施工し直すこと。','外壁の破損・欠損。補修または交換すること。','屋根材取り付け不良（ずれ・欠損）。是正すること。','棟板金釘打ち不足・浮き。増し釘し適切に施工すること。','水切り板金取り付け不良。適切に取り付け直すこと。','玄関ドア廻り防水処理不良。適切に補修すること。','基礎化粧モルタルひび割れ・剥離。補修すること。'],
+  '竣工':['クロス浮き・はがれ。適切に貼り直すこと。','クロス目地ずれ・模様の不揃い。貼り直すこと。','床材の傷・凹み・隙間。補修または交換すること。','巾木取り付け不良（浮き・隙間）。適切に取り付け直すこと。','天井クロスたるみ・継ぎ目不良。補修または貼り直すこと。','塗装のムラ・塗り残し。均一に塗り直すこと。','換気扇取り付け・動作確認が必要。適切に施工すること。','窓廻りシーリング打ち残し。適切に施工すること。','設備機器の動作確認が必要。確認し是正すること。','清掃不足。引渡し前に清掃すること。'],
   'その他':[]
 };
+// バージョン管理（担当者名・テンプレートの強制更新）
+const APP_VERSION = '2.0';
+if(ls('insp_version') !== APP_VERSION){
+  localStorage.removeItem('insp_tmpl');
+  localStorage.removeItem('insp_names');
+  localStorage.setItem('insp_version', APP_VERSION);
+}
 if (!templates) { templates = DEFAULT_TMPL; saveTmpl(); }
 if (!inspNames) { inspNames = DEFAULT_NAMES; saveNames(); }
 
@@ -877,23 +891,48 @@ function openSrc(rid, side, idx){
   openOv('ov-src');
 }
 
+// 写真圧縮（長辺1200px・品質75%）
+function compressImage(file){
+  return new Promise(resolve=>{
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const MAX = 1200, Q = 0.75;
+        let w = img.width, h = img.height;
+        if(Math.max(w,h) > MAX){
+          if(w >= h){ h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', Q));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function handleFileInput(input){
   closeOv('ov-src');
   const files=Array.from(input.files); if(!files.length) return;
   input.value='';
+  showToast('📷 写真を処理中…');
   if(files.length===1){
-    // Single file: place directly, no preview needed
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      placePhotos([ev.target.result]);
-    };
-    reader.readAsDataURL(files[0]);
+    compressImage(files[0]).then(src=>{
+      placePhotos([src]);
+    });
     return;
   }
-  // Multiple: show order preview
-  _previewFiles=files;
-  _previewOrder=files.map((_,i)=>i); // default order = selection order
-  showPreview();
+  // 複数選択：全圧縮してからプレビュー表示
+  Promise.all(files.map(f=>compressImage(f))).then(srcs=>{
+    _previewFiles = files;
+    _previewOrder = files.map((_,i)=>i);
+    _previewSrcs = srcs; // 圧縮済みデータを保持
+    renderPreviewGrid(srcs);
+  });
 }
 
 function showPreview(){
@@ -960,20 +999,10 @@ function swapOrder(fi, srcs){
 
 function applyPhotos(){
   closeOv('ov-preview');
-  // Read files in _previewOrder order
-  const orderedFiles=_previewOrder.map(i=>_previewFiles[i]);
-  const srcs=[];
-  let done=0;
-  if(!orderedFiles.length) return;
-  orderedFiles.forEach((f,i)=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      srcs[i]=ev.target.result;
-      done++;
-      if(done===orderedFiles.length) placePhotos(srcs);
-    };
-    reader.readAsDataURL(f);
-  });
+  // 圧縮済みデータを順番通りに並べてそのまま使用
+  const srcs = _previewOrder.map(i => _previewSrcs[i]);
+  if(!srcs.length) return;
+  placePhotos(srcs);
 }
 
 // セル配置順：タップしたセルから上書きで順番に埋める
@@ -1156,25 +1185,25 @@ async function sendToGas(type){
   };
 
   try {
-    // GASはCORSの制限があるためno-corsで送信しGoogleドライブのURLを別途取得
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    const url = gasUrl + '?data=' + encoded;
+    // no-corsでPOST送信（CORSをバイパス）
+    // レスポンスは読めないが、GASは処理を実行する
+    await fetch(gasUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
 
-    const res = await fetch(url, { method: 'GET' });
-    const text = await res.text();
-    let json;
-    try { json = JSON.parse(text); } catch(e){ json = {}; }
+    // GASの処理時間を待ってからGoogleドライブを確認
+    showToast('⏳ ファイル生成中…しばらくお待ちください', 'warn');
+    saveToArc();
 
-    if(json.url){
-      saveToArc();
-      showToast('✅ 生成完了！', 'ok');
-      setTimeout(()=> window.open(json.url,'_blank'), 800);
-    } else if(json.error){
-      showToast('❌ ' + json.error);
-      console.error('GAS error:', json.error);
-    } else {
-      showToast('✅ 送信完了', 'ok');
-    }
+    // 10秒待ってからGoogleドライブを開く
+    setTimeout(() => {
+      showToast('✅ 生成完了！Googleドライブを確認してください', 'ok');
+      window.open('https://drive.google.com/drive/folders/', '_blank');
+    }, 10000);
+
   } catch(err){
     showToast('❌ 通信エラー。GAS URLを確認してください');
     console.error('fetch error:', err);
@@ -1350,7 +1379,8 @@ function updateWizStep() {
   if (wizStep === 4) {
     nextBtn.textContent = '✅ 設定完了';
     nextBtn.className = 'wiz-next green';
-    skipBtn.style.display = 'none';
+    skipBtn.style.display = 'block';
+    skipBtn.textContent = '← 戻る';
   } else if (wizStep === 0) {
     nextBtn.textContent = '設定をはじめる →';
     nextBtn.className = 'wiz-next';
