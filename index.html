@@ -123,7 +123,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* 4 pairs of left+right cells */
 .cell-pair{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)}
 .cell-pair:last-child{border-bottom:none}
-.pcell{position:relative;aspect-ratio:4/3;background:#eef1f7;display:flex;flex-direction:column;
+.pcell{position:relative;aspect-ratio:3/2;background:#eef1f7;display:flex;flex-direction:column;
   align-items:center;justify-content:center;cursor:pointer;overflow:hidden}
 .pcell.R{background:#f0f8f4;border-left:1.5px solid var(--border2)}
 .pcell.has-img{background:#000}
@@ -141,7 +141,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .pcell-empty-txt{font-size:9px;color:var(--text3)}
 .rtxt-cell{padding:7px;font-size:11px;color:var(--text);line-height:1.55;
   display:flex;flex-direction:column;justify-content:flex-start;
-  aspect-ratio:4/3;cursor:pointer;position:relative;background:#f0f8f4;
+  aspect-ratio:3/2;cursor:pointer;position:relative;background:#f0f8f4;
   border-left:1.5px solid var(--border2);border-bottom:1px solid var(--border);overflow:hidden}
 
 /* Sheet row footer */
@@ -317,13 +317,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   .sheet{border:none !important;box-shadow:none !important;border-radius:0 !important;width:100% !important;}
   .srow{page-break-inside:avoid;break-inside:avoid;margin-bottom:0 !important;}
   .cell-pair{page-break-inside:avoid;break-inside:avoid;}
-  .pcell{aspect-ratio:auto !important;height:160px !important;background:#fff !important;}
+  .pcell{aspect-ratio:auto !important;height:56mm !important;background:#fff !important;}
   .pcell.R{background:#f8fcfa !important;}
   .pcell img{width:100% !important;height:100% !important;object-fit:contain !important;background:#fff !important;}
   .pcell.has-img{background:#fff !important;}
-  .rtxt-cell{height:160px !important;background:#f8fcfa !important;}
+  .rtxt-cell{height:56mm !important;background:#f8fcfa !important;}
   .pcell-lbl{display:none !important;}
-  /* URLを非表示 */
   a[href]:after{content:none !important;}
   @page{
     size:A4 portrait;
@@ -1363,7 +1362,7 @@ function buildSheet(sheet, data, row, idx) {
   sheet.getRange(2, 2).setValue('↓↓是正写真はこの面に貼付けて提出してください。');
   sheet.getRange(2, 2).setBackground('#e6f4f0').setFontWeight('bold').setFontSize(9).setFontColor('#0a7c5c');
   sheet.setRowHeight(2, 22);
-  const PHOTO_ROW_HEIGHT = 150, PHOTO_START_ROW = 3, TOTAL_ROWS = PHOTO_START_ROW + 3;
+  const PHOTO_ROW_HEIGHT = 200, PHOTO_START_ROW = 3, TOTAL_ROWS = PHOTO_START_ROW + 3;
   for (let i = 0; i < 4; i++) {
     const r = PHOTO_START_ROW + i;
     sheet.setRowHeight(r, PHOTO_ROW_HEIGHT);
