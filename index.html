@@ -323,6 +323,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   .pcell.has-img{background:#fff !important;}
   .rtxt-cell{height:56mm !important;background:#f8fcfa !important;}
   .pcell-lbl{display:none !important;}
+  .pcell-empty-ico{display:none !important;}
+  .pcell-empty-txt{display:none !important;}
+  .type-bar .tk{display:none !important;}
   a[href]:after{content:none !important;}
   @page{
     size:A4 portrait;
@@ -824,7 +827,7 @@ function renderSheet(){
   });
   hdr.appendChild(hrow);
   const tbar=document.createElement('div'); tbar.className='type-bar';
-  tbar.innerHTML=`<span class="tl">検査種別</span><span class="tv">${xe(session.type)}</span><span class="tk">🔒 固定</span>`;
+  tbar.innerHTML=`<span class="tl">検査種別</span><span class="tv">${xe(session.type)}</span>`;
   hdr.appendChild(tbar);
 
   // Rows
@@ -1369,12 +1372,12 @@ function buildSheet(sheet, data, row, idx) {
     const leftCell = sheet.getRange(r, 1);
     leftCell.setBackground('#f0f3f8').setVerticalAlignment('middle').setHorizontalAlignment('center');
     if (row.leftPhotos[i]) { insertImage(sheet, row.leftPhotos[i], r, 1); }
-    else { leftCell.setValue('（写真なし）').setFontColor('#9098b0').setFontSize(9); }
+    else { leftCell.setValue(''); }
     const rightCell = sheet.getRange(r, 2);
     rightCell.setBackground('#f0f8f4').setVerticalAlignment('middle').setHorizontalAlignment('center');
     if (row.rightPhotos[i]) { insertImage(sheet, row.rightPhotos[i], r, 2); }
     else if (row.rightTexts[i]) { rightCell.setValue(row.rightTexts[i]).setFontSize(10).setWrap(true).setHorizontalAlignment('left').setVerticalAlignment('top'); }
-    else { rightCell.setValue('（建設会社が是正後に記入）').setFontColor('#c0c4d0').setFontSize(8).setWrap(true).setHorizontalAlignment('center'); }
+    else { rightCell.setValue(''); }
     sheet.getRange(r, 1, 1, 2).setBorder(true, true, true, true, true, false, '#8a90a8', SpreadsheetApp.BorderStyle.SOLID);
   }
   sheet.getRange(1, 1, TOTAL_ROWS, 2).setBorder(true, true, true, true, false, false, '#1b3a6b', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
