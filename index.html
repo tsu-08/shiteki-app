@@ -237,61 +237,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .bbtn.grn{background:var(--green);color:#fff;box-shadow:0 3px 10px rgba(10,124,92,.3)}
 .bbtn.org{background:var(--orange);color:#fff;box-shadow:0 3px 10px rgba(234,88,12,.3)}
 
-/* WIZARD */
-.wizard-ov{position:fixed;inset:0;background:rgba(15,20,35,.92);z-index:500;
-  display:flex;align-items:flex-end;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .25s}
-.wizard-ov.on{opacity:1;pointer-events:all}
-.wizard-sheet{background:var(--white);border-radius:20px 20px 0 0;
-  width:100%;max-width:520px;padding:0 0 32px;
-  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
-  max-height:92vh;overflow-y:auto}
-.wizard-ov.on .wizard-sheet{transform:translateY(0)}
-.wiz-header{background:var(--navy);padding:18px 16px 14px;border-radius:20px 20px 0 0;position:sticky;top:0;z-index:1}
-.wiz-progress{display:flex;gap:5px;margin-bottom:10px}
-.wiz-dot{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.25);transition:background .3s}
-.wiz-dot.done{background:#7eb8ff}
-.wiz-dot.active{background:#fff}
-.wiz-title{color:#fff;font-size:16px;font-weight:900}
-.wiz-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
-.wiz-body{padding:16px}
-.wiz-step{display:none}.wiz-step.on{display:block}
-.wiz-desc{font-size:13px;color:var(--text2);line-height:1.75;margin-bottom:14px}
-.wiz-box{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:12px}
-.wiz-box-title{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:7px;letter-spacing:.5px}
-.wiz-step-row{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px}
-.wiz-step-row:last-child{margin-bottom:0}
-.wiz-step-num{min-width:22px;height:22px;background:var(--navy);color:#fff;border-radius:50%;
-  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.wiz-step-txt{font-size:12px;color:var(--text);line-height:1.65}
-.wiz-step-txt code{color:var(--navy);font-size:11px;background:var(--nlight);padding:1px 5px;border-radius:4px}
-.wiz-copy-btn{width:100%;padding:12px;border-radius:9px;border:none;
-  background:var(--navy);color:#fff;font-size:13px;font-weight:700;
-  cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:10px}
-.wiz-copy-btn.copied{background:var(--green)}
-.wiz-link-btn{width:100%;padding:11px;border-radius:9px;border:1.5px solid var(--navy);
-  background:var(--nlight);color:var(--navy);font-size:13px;font-weight:700;
-  cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:10px}
-.wiz-url-inp{width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:8px;
-  color:var(--text);font-family:var(--font);font-size:12px;padding:10px 12px;outline:none;margin-bottom:10px}
-.wiz-url-inp:focus{border-color:var(--navy)}
-.wiz-actions{display:flex;gap:8px;padding:0 16px}
-.wiz-next{flex:1;padding:14px;border-radius:10px;border:none;background:var(--navy);
-  color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)}
-.wiz-next:active{transform:scale(.98)}
-.wiz-next.green{background:var(--green)}
-.wiz-skip{padding:14px 16px;border-radius:10px;border:1.5px solid var(--border);
-  background:none;color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)}
-.wiz-warn{background:#fff8e1;border:1px solid var(--warn);border-radius:8px;
-  padding:9px 12px;font-size:11px;color:var(--warn);line-height:1.6;margin-bottom:10px}
-.wiz-action-banner{background:var(--navy);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
-.wiz-action-num{background:#fff;color:var(--navy);font-size:10px;font-weight:900;padding:3px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0}
-.wiz-action-txt{color:#fff;font-size:13px;font-weight:700;line-height:1.4}
-.gas-inp{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:7px;
-  font-family:var(--font);font-size:12px;padding:8px 10px;outline:none;color:var(--text);margin-bottom:6px}
-.gas-inp:focus{border-color:var(--navy)}
-.gas-note{font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:12px}
-
+/* GAS/Wizard styles removed */
 /* Toast */
 .toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);
   background:rgba(26,29,39,.93);color:#fff;font-size:12px;font-weight:600;
@@ -333,6 +279,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   }
 }
 </style>
+  <!-- exceljs: ブラウザ用Excelライブラリ -->
+  <script src="./exceljs.min.js" defer></script>
 </head>
 <body>
 
@@ -355,7 +303,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="hbtns">
       <button class="hbtn pri" id="btn-new"><span class="bi">📝</span><div class="bt"><h3>新規作成</h3><p>物件名・検査日・担当者・種別を設定</p></div></button>
       <button class="hbtn" id="btn-load"><span class="bi">📂</span><div class="bt"><h3>過去の物件を読み込む</h3><p>保存済みの記録を呼び出す</p></div></button>
-      <button class="hbtn" id="btn-gas-set"><span class="bi">⚙️</span><div class="bt"><h3>GAS連携設定</h3><p>Excel/PDF出力の設定・変更</p></div></button>
       <button class="hbtn" id="btn-install" style="display:none;border-color:var(--green)" onclick="installApp()"><span class="bi">📲</span><div class="bt"><h3>ホーム画面に追加</h3><p>アプリとしてインストール</p></div></button>
     </div>
     <div id="arc-sec" style="display:none;margin-top:18px">
@@ -503,20 +450,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 
-<!-- GAS URL setting -->
-<div class="ov" id="ov-gas">
-  <div class="modal">
-    <div class="mhandle"></div>
-    <div class="mttl">⚙️ GAS連携設定</div>
-    <div class="gas-note">Google Apps ScriptのウェブアプリURLを入力してください。<br>設定後、Excel/PDF出力ボタンからGASへデータを送信します。</div>
-    <input class="gas-inp" id="gas-url" type="url" placeholder="https://script.google.com/macros/s/...">
-    <div class="mrow">
-      <button class="mbtn cancel" id="gas-cancel">キャンセル</button>
-      <button class="mbtn ok" id="gas-ok">✅ 保存</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -526,7 +459,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 let archives  = JSON.parse(ls('insp_arc')  || '[]');
 let templates = JSON.parse(ls('insp_tmpl') || 'null');
 let inspNames = JSON.parse(ls('insp_names')|| 'null');
-let gasUrl    = ls('insp_gas') || '';
 let session   = null;
 // session: {id,owner,date,insp1,insp2,type,rows:[]}
 // row: {id, LP:[b64|null x4], RP:[b64|null x4], RT:['','','',''], RC:['','','','']}
@@ -575,10 +507,6 @@ function init() {
   showBot('home');
   bindAll();
   // 初回起動またはGAS未設定の場合はウィザードを表示
-  const wizDone = ls('insp_wiz_done');
-  if (!wizDone) {
-    setTimeout(() => showWizard(), 600);
-  }
 }
 function ls(k){ return localStorage.getItem(k); }
 function today(){ return new Date().toISOString().slice(0,10); }
@@ -597,18 +525,7 @@ function bindAll(){
   // Home
   document.getElementById('btn-new').addEventListener('click', startNew);
   document.getElementById('btn-load').addEventListener('click', toggleArc);
-  document.getElementById('btn-gas-set').addEventListener('click', ()=>{ showWizard(); });
-  // ウィザードボタン
-  document.getElementById('wiz-next').addEventListener('click', wizNext);
-  document.getElementById('wiz-skip').addEventListener('click', wizSkipOrBack);
-  document.getElementById('wiz-open-gas').addEventListener('click', ()=> window.open('https://script.google.com', '_blank'));
-  document.getElementById('wiz-copy-btn').addEventListener('click', ()=>{
-    navigator.clipboard.writeText(GAS_CODE).then(()=>{
-      const btn = document.getElementById('wiz-copy-btn');
-      btn.textContent = '✅ コピーしました！'; btn.className = 'wiz-copy-btn copied';
-      setTimeout(()=>{ btn.textContent = '📋 GASコードをコピー'; btn.className = 'wiz-copy-btn'; }, 2500);
-    }).catch(()=> showToast('⚠️ コピーに失敗しました'));
-  });
+
 
   // Setup
   document.getElementById('btn-add-insp').addEventListener('click', addInspName);
@@ -642,10 +559,6 @@ function bindAll(){
   document.getElementById('rtxt-ok').addEventListener('click', applyRtxt);
   document.getElementById('ov-rtxt').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeOv('ov-rtxt'); });
 
-  // GAS modal
-  document.getElementById('gas-cancel').addEventListener('click', ()=> closeOv('ov-gas'));
-  document.getElementById('gas-ok').addEventListener('click', ()=>{ gasUrl=document.getElementById('gas-url').value.trim(); localStorage.setItem('insp_gas',gasUrl); closeOv('ov-gas'); showToast('✅ 保存しました','ok'); });
-
   // Bottom bar (delegated)
   document.getElementById('botbar').addEventListener('click', e=>{
     const a = e.target.closest('[data-action]');
@@ -654,7 +567,7 @@ function bindAll(){
     if(act==='back') goTab('home');
     else if(act==='start') startSession();
     else if(act==='save') saveToArc();
-    else if(act==='excel') sendToGas('excel');
+    else if(act==='excel') generateExcel();
     else if(act==='pdf') printAsPdf();
   });
 
@@ -920,14 +833,14 @@ function openSrc(rid, side, idx){
   openOv('ov-src');
 }
 
-// 写真圧縮（長辺1200px・品質75%）
+// 写真圧縮（長辺1000px・品質70%）
 function compressImage(file){
   return new Promise(resolve=>{
     const reader = new FileReader();
     reader.onload = ev=>{
       const img = new Image();
       img.onload = ()=>{
-        const MAX = 1200, Q = 0.75;
+        const MAX = 1000, Q = 0.70;  // 1000px・70%品質
         let w = img.width, h = img.height;
         if(Math.max(w,h) > MAX){
           if(w >= h){ h = Math.round(h * MAX / w); w = MAX; }
@@ -1210,82 +1123,182 @@ function printAsPdf(){
     setTimeout(()=>{ document.title = originalTitle; }, 2000);
   }, 500);
 }
-async function sendToGas(type){
+// ─── Excel生成（exceljs ブラウザローカル生成）────────────
+async function generateExcel(){
   if(!session||!session.rows.length){ showToast('⚠️ データがありません'); return; }
-  if(!gasUrl){ showToast('⚠️ GAS URLを設定してください（ホーム→⚙️）'); showWizard(); return; }
 
-  // ボタンを無効化
   document.querySelectorAll('.bbtn').forEach(b=> b.disabled=true);
-  showToast(type==='excel' ? '📊 Excel生成中…' : '📄 PDF生成中…','warn');
-
-  const payload={
-    type,
-    owner:    session.owner    || '',
-    date:     session.date     || '',
-    insp1:    session.insp1    || '',
-    insp2:    session.insp2    || '',
-    inspType: session.type     || '',
-    rows: session.rows.map((row,i)=>({
-      no: i+1,
-      leftPhotos:  row.LP.map(p=>p||null),
-      rightPhotos: row.RP.map(p=>p||null),
-      rightTexts:  row.RT
-    }))
-  };
-
-  // デバッグログ
-  const bodyStr = JSON.stringify(payload);
-  console.log('送信データサイズ:', bodyStr.length, 'bytes');
-  console.log('rows数:', payload.rows.length);
-  payload.rows.forEach((r,i)=>{
-    const lp = r.leftPhotos.filter(p=>p&&p.length>10);
-    const rp = r.rightPhotos.filter(p=>p&&p.length>10);
-    console.log('row'+i+': 左写真'+lp.length+'枚, 右写真'+rp.length+'枚');
-    if(lp[0]) console.log('左写真0 先頭50文字:', lp[0].substring(0,50));
-  });
+  showToast('📊 Excel生成中…','warn');
 
   try {
-    // no-corsでPOST送信（CORSをバイパス・レスポンスは読めないがGASは処理する）
-    fetch(gasUrl, {
-      method: 'POST',
-      mode:   'no-cors',
-      headers:{ 'Content-Type': 'text/plain' },
-      body:   JSON.stringify(payload)
+    // exceljsロード（未ロードの場合）
+    if(typeof ExcelJS === 'undefined'){
+      await loadScript('./exceljs.min.js');
+    }
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = '現場検査記録アプリ';
+    wb.created = new Date();
+
+    const COL_W = 36;       // 列幅（文字単位）
+    const ROW_H_HDR = 25;   // ヘッダー行高さ（pt）
+    const ROW_H_SUB = 18;
+    const ROW_H_PHOTO = 160; // 写真行高さ（pt）
+    const PHOTO_ROWS = 4;
+
+    const inspStr = [session.insp1, session.insp2].filter(Boolean).join(' / ');
+    const dateStr = formatDateJP(session.date);
+    const ownerStr = session.owner || '物件';
+    const typeStr  = session.type  || '';
+
+    for(let idx = 0; idx < session.rows.length; idx++){
+      const row = session.rows[idx];
+      const ws = wb.addWorksheet('No' + (idx + 1));
+
+      ws.getColumn(1).width = COL_W;
+      ws.getColumn(2).width = COL_W;
+
+      // ── 行1：ヘッダー ──
+      ws.getRow(1).height = ROW_H_HDR;
+      ws.mergeCells('A1:B1');
+      const hCell = ws.getCell('A1');
+      hCell.value = ownerStr + ' 様邸　' + dateStr + '　' + typeStr + '　担当：' + inspStr;
+      hCell.fill   = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1b3a6b'} };
+      hCell.font   = { color:{argb:'FFFFFFFF'}, bold:true, size:10, name:'メイリオ' };
+      hCell.alignment = { horizontal:'left', vertical:'middle' };
+
+      // ── 行2：サブヘッダー ──
+      ws.getRow(2).height = ROW_H_SUB;
+      const s2L = ws.getCell('A2');
+      s2L.value = '指摘事項 No.' + (idx + 1);
+      s2L.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFe6edf8'} };
+      s2L.font  = { bold:true, size:9, color:{argb:'FF1b3a6b'}, name:'メイリオ' };
+      s2L.alignment = { horizontal:'left', vertical:'middle' };
+      const s2R = ws.getCell('B2');
+      s2R.value = '↓↓是正写真はこの面に貼付けて提出してください。';
+      s2R.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFe6f4f0'} };
+      s2R.font  = { bold:true, size:9, color:{argb:'FF0a7c5c'}, name:'メイリオ' };
+      s2R.alignment = { horizontal:'left', vertical:'middle' };
+
+      // ── 行3〜6：写真行 ──
+      for(let pi = 0; pi < PHOTO_ROWS; pi++){
+        const rowNum = pi + 3;
+        ws.getRow(rowNum).height = ROW_H_PHOTO;
+
+        // 左セル（指摘写真）
+        const lCell = ws.getCell(rowNum, 1);
+        lCell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFf0f3f8'} };
+        lCell.alignment = { horizontal:'center', vertical:'middle' };
+        const lPhoto = row.LP && row.LP[pi];
+        if(lPhoto && lPhoto.startsWith('data:')){
+          try {
+            const imgId = addImageToWorkbook(wb, lPhoto);
+            ws.addImage(imgId, {
+              tl: { col: 0, row: rowNum - 1 },
+              br: { col: 1, row: rowNum },
+              editAs: 'oneCell'
+            });
+          } catch(imgErr){ lCell.value = '（写真エラー）'; }
+        }
+
+        // 右セル（是正写真欄 or テキスト）
+        const rCell = ws.getCell(rowNum, 2);
+        rCell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFf0f8f4'} };
+        const rPhoto = row.RP && row.RP[pi];
+        const rText  = row.RT && row.RT[pi];
+        if(rPhoto && rPhoto.startsWith('data:')){
+          try {
+            const imgId2 = addImageToWorkbook(wb, rPhoto);
+            ws.addImage(imgId2, {
+              tl: { col: 1, row: rowNum - 1 },
+              br: { col: 2, row: rowNum },
+              editAs: 'oneCell'
+            });
+          } catch(imgErr){ rCell.value = '（写真エラー）'; }
+        } else if(rText){
+          rCell.value = rText;
+          rCell.font  = { size:10, name:'メイリオ' };
+          rCell.alignment = { wrapText:true, horizontal:'left', vertical:'top' };
+        }
+
+        // セル罫線
+        const borderStyle = { style:'thin', color:{argb:'FF8a90a8'} };
+        [lCell, rCell].forEach(c => {
+          c.border = {
+            top:borderStyle, bottom:borderStyle,
+            left:borderStyle, right:borderStyle
+          };
+        });
+      }
+
+      // 外枠太罫線
+      const outerStyle = { style:'medium', color:{argb:'FF1b3a6b'} };
+      for(let r = 1; r <= 6; r++){
+        const cL = ws.getCell(r, 1);
+        const cR = ws.getCell(r, 2);
+        if(r === 1){
+          cL.border = Object.assign({}, cL.border||{}, {top:outerStyle, left:outerStyle});
+          cR.border = Object.assign({}, cR.border||{}, {top:outerStyle, right:outerStyle});
+        }
+        if(r === 6){
+          cL.border = Object.assign({}, cL.border||{}, {bottom:outerStyle, left:outerStyle});
+          cR.border = Object.assign({}, cR.border||{}, {bottom:outerStyle, right:outerStyle});
+        }
+        cL.border = Object.assign({}, cL.border||{}, {left:outerStyle});
+        cR.border = Object.assign({}, cR.border||{}, {right:outerStyle});
+      }
+    }
+
+    // xlsxをblobとしてDL
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
+    const d = (session.date||'').replace(/-/g,'');
+    const fname = d + '_' + ownerStr + '様_' + typeStr + '_検査記録.xlsx';
+    downloadBlob(blob, fname);
 
     saveToArc();
-
-    // GASの処理時間を待ってからGoogleドライブを確認
-    showToast('⏳ 生成中… しばらくお待ちください', 'warn');
-
-    const totalPhotos = session.rows.reduce((sum,r)=>
-      sum + r.LP.filter(Boolean).length + r.RP.filter(Boolean).length, 0);
-    const waitSec = Math.max(20, Math.min(90, 15 + totalPhotos * 3));
-
-    let remaining = waitSec;
-    const timer = setInterval(()=>{
-      remaining--;
-      if(remaining > 0){
-        showToast(`⏳ 生成中… あと約${remaining}秒`, 'warn');
-      } else {
-        clearInterval(timer);
-        document.querySelectorAll('.bbtn').forEach(b=> b.disabled=false);
-        showToast('✅ 完了！Googleドライブを確認してください', 'ok');
-        setTimeout(()=>{
-          window.open(
-            'https://drive.google.com/drive/search?q=' +
-            encodeURIComponent('現場検査記録'),
-            '_blank'
-          );
-        }, 800);
-      }
-    }, 1000);
+    showToast('✅ Excelをダウンロードしました','ok');
 
   } catch(err){
+    console.error('Excel生成エラー:', err);
+    showToast('❌ Excel生成に失敗しました: ' + err.message);
+  } finally {
     document.querySelectorAll('.bbtn').forEach(b=> b.disabled=false);
-    showToast('❌ 通信エラー。GAS URLを確認してください');
-    console.error('fetch error:', err);
   }
+}
+
+function addImageToWorkbook(wb, dataUrl){
+  const parts = dataUrl.split(',');
+  const mime  = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+  const ext   = mime === 'image/png' ? 'png' : 'jpeg';
+  const b64   = parts[1];
+  return wb.addImage({ base64: b64, extension: ext });
+}
+
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+function loadScript(src){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function formatDateJP(s){
+  if(!s) return '';
+  const d = new Date(s);
+  const reiwa = d.getFullYear() - 2018;
+  return '令和' + reiwa + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
 }
 
 // ─── OVERLAY ─────────────────────────────────────────
@@ -1293,211 +1306,6 @@ function openOv(id){ document.getElementById(id).classList.add('on'); }
 function closeOv(id){ document.getElementById(id).classList.remove('on'); }
 
 // ─── UTILS ───────────────────────────────────────────
-// ─── GAS WIZARD ──────────────────────────────────────
-const WIZ_TITLES = [
-  'ようこそ！初回設定',
-  'GASを開く',
-  'コードを貼り付ける',
-  'ウェブアプリとしてデプロイ',
-  'URLを貼り付けて完了'
-];
-const WIZ_SUBS = [
-  '約5分で設定完了します',
-  'ブラウザでGoogle Apps Scriptを開きます',
-  'コードを1タップでコピーできます',
-  'ウェブアプリとして公開します',
-  'デプロイ後に表示されたURLを入力'
-];
-let wizStep = 0;
-
-const GAS_CODE = `// 現場検査記録 - Google Apps Script
-const FOLDER_NAME = '現場検査記録';
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    const outputType = data.type || 'excel';
-    const folder = getOrCreateFolder(FOLDER_NAME);
-    const ss = buildSpreadsheet(data, folder);
-    let url;
-    if (outputType === 'pdf') {
-      const pdfFile = exportAsPdf(ss, data, folder);
-      url = pdfFile.getUrl();
-      DriveApp.getFileById(ss.getId()).setTrashed(true);
-    } else {
-      const xlsxFile = exportAsXlsx(ss, data, folder);
-      url = xlsxFile.getUrl();
-      DriveApp.getFileById(ss.getId()).setTrashed(true);
-    }
-    return ContentService.createTextOutput(JSON.stringify({ url })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-function doGet() {
-  return ContentService.createTextOutput(JSON.stringify({ status: 'OK', message: '現場検査記録GASは正常に動作しています' })).setMimeType(ContentService.MimeType.JSON);
-}
-function buildSpreadsheet(data, folder) {
-  const ss = SpreadsheetApp.create(buildFileName(data, 'temp'));
-  const defaultSheet = ss.getActiveSheet();
-  data.rows.forEach((row, idx) => {
-    let sheet;
-    if (idx === 0) { sheet = defaultSheet; sheet.setName('No' + (idx + 1)); }
-    else { sheet = ss.insertSheet('No' + (idx + 1)); }
-    buildSheet(sheet, data, row, idx);
-  });
-  const file = DriveApp.getFileById(ss.getId());
-  folder.addFile(file);
-  DriveApp.getRootFolder().removeFile(file);
-  return ss;
-}
-function buildSheet(sheet, data, row, idx) {
-  sheet.setColumnWidth(1, 270);
-  sheet.setColumnWidth(2, 270);
-  const headerRange = sheet.getRange(1, 1, 1, 2);
-  headerRange.merge();
-  const inspStr = [data.insp1, data.insp2].filter(Boolean).join(' / ');
-  headerRange.setValue(data.owner + ' 様邸　' + formatDate(data.date) + '　' + data.inspType + '　担当：' + inspStr);
-  headerRange.setBackground('#1b3a6b').setFontColor('#ffffff').setFontWeight('bold').setFontSize(10);
-  headerRange.setHorizontalAlignment('left').setVerticalAlignment('middle');
-  sheet.setRowHeight(1, 30);
-  sheet.getRange(2, 1).setValue('指摘事項 No.' + (idx + 1));
-  sheet.getRange(2, 1).setBackground('#e6edf8').setFontWeight('bold').setFontSize(9).setFontColor('#1b3a6b');
-  sheet.getRange(2, 2).setValue('↓↓是正写真はこの面に貼付けて提出してください。');
-  sheet.getRange(2, 2).setBackground('#e6f4f0').setFontWeight('bold').setFontSize(9).setFontColor('#0a7c5c');
-  sheet.setRowHeight(2, 22);
-  const PHOTO_ROW_HEIGHT = 200, PHOTO_START_ROW = 3, TOTAL_ROWS = PHOTO_START_ROW + 3;
-  for (let i = 0; i < 4; i++) {
-    const r = PHOTO_START_ROW + i;
-    sheet.setRowHeight(r, PHOTO_ROW_HEIGHT);
-    const leftCell = sheet.getRange(r, 1);
-    leftCell.setBackground('#f0f3f8').setVerticalAlignment('middle').setHorizontalAlignment('center');
-    if (row.leftPhotos[i]) { insertImage(sheet, row.leftPhotos[i], r, 1); }
-    else { leftCell.setValue(''); }
-    const rightCell = sheet.getRange(r, 2);
-    rightCell.setBackground('#f0f8f4').setVerticalAlignment('middle').setHorizontalAlignment('center');
-    if (row.rightPhotos[i]) { insertImage(sheet, row.rightPhotos[i], r, 2); }
-    else if (row.rightTexts[i]) { rightCell.setValue(row.rightTexts[i]).setFontSize(10).setWrap(true).setHorizontalAlignment('left').setVerticalAlignment('top'); }
-    else { rightCell.setValue(''); }
-    sheet.getRange(r, 1, 1, 2).setBorder(true, true, true, true, true, false, '#8a90a8', SpreadsheetApp.BorderStyle.SOLID);
-  }
-  sheet.getRange(1, 1, TOTAL_ROWS, 2).setBorder(true, true, true, true, false, false, '#1b3a6b', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-  setPrintSettings(sheet, TOTAL_ROWS);
-}
-function setPrintSettings(sheet, lastRow) {
-  const p = sheet.getPageSetup();
-  p.setPaperSize(SpreadsheetApp.PaperSize.A4);
-  p.setOrientation(SpreadsheetApp.Orientation.PORTRAIT);
-  p.setFitToPage(true);
-  p.setTopMargin(SpreadsheetApp.Margins.TOP, 0.4);
-  p.setBottomMargin(SpreadsheetApp.Margins.BOTTOM, 0.4);
-  p.setLeftMargin(SpreadsheetApp.Margins.LEFT, 0.4);
-  p.setRightMargin(SpreadsheetApp.Margins.RIGHT, 0.4);
-  p.setPrintGridlines(false);
-  p.setPrintArea('A1:B' + lastRow);
-  p.setRepeatingRows(1, 2);
-}
-function insertImage(sheet, base64DataUrl, row, col) {
-  try {
-    const parts = base64DataUrl.split(',');
-    const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
-    const blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), mime, 'photo.jpg');
-    const image = sheet.insertImage(blob, col, row);
-    const cw = sheet.getColumnWidth(col), rh = sheet.getRowHeight(row), m = 4;
-    const maxW = cw - m * 2, maxH = rh - m * 2;
-    const scale = Math.min(maxW / image.getWidth(), maxH / image.getHeight(), 1);
-    image.setWidth(Math.floor(image.getWidth() * scale)).setHeight(Math.floor(image.getHeight() * scale));
-    image.setAnchorCell(sheet.getRange(row, col));
-    image.setAnchorCellXOffset(Math.floor((maxW - image.getWidth()) / 2));
-    image.setAnchorCellYOffset(m);
-  } catch(err) {
-    sheet.getRange(row, col).setValue('（写真エラー）').setFontSize(8).setFontColor('#c0392b');
-  }
-}
-function exportAsXlsx(ss, data, folder) {
-  const url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=xlsx';
-  const blob = UrlFetchApp.fetch(url, { headers: { 'Authorization': 'Bearer ' + ScriptApp.getOAuthToken() } }).getBlob().setName(buildFileName(data, 'excel') + '.xlsx');
-  return folder.createFile(blob);
-}
-function exportAsPdf(ss, data, folder) {
-  const url = 'https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=pdf&size=A4&portrait=true&fitw=true&fith=true&sheetnames=false&printtitle=false&pagenumbers=false&gridlines=false&fzr=false';
-  const blob = UrlFetchApp.fetch(url, { headers: { 'Authorization': 'Bearer ' + ScriptApp.getOAuthToken() } }).getBlob().setName(buildFileName(data, 'pdf') + '.pdf');
-  return folder.createFile(blob);
-}
-function getOrCreateFolder(name) {
-  const f = DriveApp.getFoldersByName(name);
-  return f.hasNext() ? f.next() : DriveApp.createFolder(name);
-}
-function buildFileName(data, type) {
-  return (data.date||'').replace(/-/g,'') + '_' + (data.owner||'物件') + '様_' + (data.inspType||'') + '_検査記録_' + (type==='pdf'?'PDF':'Excel');
-}
-function formatDate(s) {
-  if (!s) return '';
-  const d = new Date(s);
-  return '令和' + (d.getFullYear()-2018) + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
-}`;
-
-function showWizard() {
-  wizStep = 0;
-  updateWizStep();
-  document.getElementById('wiz-ov').classList.add('on');
-}
-
-function updateWizStep() {
-  for (let i = 0; i < 5; i++) {
-    document.getElementById('ws' + i).classList.toggle('on', i === wizStep);
-    const dot = document.getElementById('wd' + i);
-    dot.classList.remove('done', 'active');
-    if (i < wizStep) dot.classList.add('done');
-    else if (i === wizStep) dot.classList.add('active');
-  }
-  document.getElementById('wiz-title').textContent = WIZ_TITLES[wizStep];
-  document.getElementById('wiz-sub').textContent = WIZ_SUBS[wizStep];
-  const nextBtn = document.getElementById('wiz-next');
-  const skipBtn = document.getElementById('wiz-skip');
-  if (wizStep === 4) {
-    nextBtn.textContent = '✅ 設定完了';
-    nextBtn.className = 'wiz-next green';
-    skipBtn.style.display = 'block';
-    skipBtn.textContent = '← 戻る';
-  } else if (wizStep === 0) {
-    nextBtn.textContent = '設定をはじめる →';
-    nextBtn.className = 'wiz-next';
-    skipBtn.style.display = 'block';
-    skipBtn.textContent = '後で設定する';
-  } else {
-    nextBtn.textContent = '次へ →';
-    nextBtn.className = 'wiz-next';
-    skipBtn.style.display = 'block';
-    skipBtn.textContent = '← 戻る';
-  }
-}
-
-function wizNext() {
-  if (wizStep === 4) {
-    const url = document.getElementById('wiz-url-inp').value.trim();
-    if (!url) { showToast('⚠️ URLを入力してください'); return; }
-    if (!url.startsWith('https://script.google.com')) { showToast('⚠️ 正しいGAS URLを入力してください'); return; }
-    gasUrl = url;
-    localStorage.setItem('insp_gas', gasUrl);
-    localStorage.setItem('insp_wiz_done', '1');
-    document.getElementById('wiz-ov').classList.remove('on');
-    showToast('✅ GAS設定が完了しました！', 'ok');
-    return;
-  }
-  wizStep++;
-  updateWizStep();
-}
-
-function wizSkipOrBack() {
-  if (wizStep === 0) {
-    localStorage.setItem('insp_wiz_done', 'skipped');
-    document.getElementById('wiz-ov').classList.remove('on');
-  } else {
-    wizStep--;
-    updateWizStep();
-  }
-}
-function xe(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function installApp(){
   if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; }); }
   else { showToast('ブラウザのメニューから「ホーム画面に追加」を選択してください','ok'); }
@@ -1509,116 +1317,6 @@ function showToast(msg,cls=''){
   clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('on'),2800);
 }
 </script>
-<!-- ===== GAS設定ウィザード ===== -->
-<div class="wizard-ov" id="wiz-ov">
-  <div class="wizard-sheet">
-    <div class="wiz-header">
-      <div class="wiz-progress">
-        <div class="wiz-dot active" id="wd0"></div>
-        <div class="wiz-dot" id="wd1"></div>
-        <div class="wiz-dot" id="wd2"></div>
-        <div class="wiz-dot" id="wd3"></div>
-        <div class="wiz-dot" id="wd4"></div>
-      </div>
-      <div class="wiz-title" id="wiz-title">指摘写真生成アプリへようこそ</div>
-      <div class="wiz-sub" id="wiz-sub">初回設定（約5分）</div>
-    </div>
-    <div class="wiz-body">
-
-      <!-- Step 0: ようこそ -->
-      <div class="wiz-step on" id="ws0">
-        <div class="wiz-desc">
-          写真込みの<strong>Excel・PDF</strong>を<strong>自分のGoogleドライブ</strong>に保存するため、初回だけ設定が必要です。設定は<strong>1回だけ</strong>で完了します。
-        </div>
-        <div class="wiz-box">
-          <div class="wiz-box-title">設定でできること</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">写真込みExcel（.xlsx）の生成</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">写真込みPDF（.pdf）の生成</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">自分のGoogleドライブに自動保存</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">✓</div><div class="wiz-step-txt">完全無料（Googleアカウントのみ）</div></div>
-        </div>
-        <div class="wiz-warn">📱 このあとGoogleのページを開きますが、<strong>このアプリ画面はそのまま残っています。</strong>作業後にこのアプリに戻ってきてください。</div>
-      </div>
-
-      <!-- Step 1: GASを開いてプロジェクト作成 -->
-      <div class="wiz-step" id="ws1">
-        <div class="wiz-action-banner">
-          <div class="wiz-action-num">今やること</div>
-          <div class="wiz-action-txt">GoogleのサイトでGASプロジェクトを新規作成する</div>
-        </div>
-        <div class="wiz-box">
-          <div class="wiz-box-title">手順（別画面で行います）</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">下の「GASを開く」ボタンをタップ<br><span style="color:var(--text3);font-size:10px">→ 別タブでGoogleのページが開きます</span></div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">Googleアカウントでログイン</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">左上「<strong>新しいプロジェクト</strong>」をタップ</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">4</div><div class="wiz-step-txt">コードエディタが開いたら<strong>このアプリに戻る</strong></div></div>
-        </div>
-        <button class="wiz-link-btn" id="wiz-open-gas">🌐 GASを開く（別タブで開きます）</button>
-        <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:4px">GASを開いたら、このアプリに戻って「次へ」を押してください</div>
-      </div>
-
-      <!-- Step 2: コードをコピーして貼り付け -->
-      <div class="wiz-step" id="ws2">
-        <div class="wiz-action-banner">
-          <div class="wiz-action-num">今やること</div>
-          <div class="wiz-action-txt">コードをコピーして、GASのエディタに貼り付ける</div>
-        </div>
-        <div class="wiz-box">
-          <div class="wiz-box-title">手順</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">下の「<strong>コードをコピー</strong>」ボタンをタップ<br><span style="color:var(--text3);font-size:10px">→ このアプリ上でコードがコピーされます（画面遷移なし）</span></div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">GASのタブに切り替える</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">エディタ内の文字を<strong>全選択して削除</strong><br><span style="color:var(--text3);font-size:10px">（function myFunction() {} という文字）</span></div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">4</div><div class="wiz-step-txt">コピーしたコードを<strong>貼り付け</strong>（長押し→貼り付け）</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">5</div><div class="wiz-step-txt">💾 保存ボタン（フロッピーアイコン）をタップ</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">6</div><div class="wiz-step-txt"><strong>このアプリに戻る</strong></div></div>
-        </div>
-        <button class="wiz-copy-btn" id="wiz-copy-btn">📋 コードをコピー（画面はそのまま）</button>
-      </div>
-
-      <!-- Step 3: デプロイ -->
-      <div class="wiz-step" id="ws3">
-        <div class="wiz-action-banner">
-          <div class="wiz-action-num">今やること</div>
-          <div class="wiz-action-txt">GASをウェブアプリとして公開（デプロイ）する</div>
-        </div>
-        <div class="wiz-box">
-          <div class="wiz-box-title">手順（GASのタブで行います）</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">GASのタブに切り替えて、右上「<strong>デプロイ</strong>」をタップ</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">「<strong>新しいデプロイ</strong>」を選択</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">⚙️アイコン →「<strong>ウェブアプリ</strong>」を選択</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">4</div><div class="wiz-step-txt">「アクセスできるユーザー」→ <strong style="color:var(--red)">「全員」</strong> に変更</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">5</div><div class="wiz-step-txt">「<strong>デプロイ</strong>」ボタンをタップ</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">6</div><div class="wiz-step-txt">「<strong>アクセスを承認</strong>」→ Googleアカウントを選択 → 「<strong>許可</strong>」</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">7</div><div class="wiz-step-txt"><strong>このアプリに戻る</strong></div></div>
-        </div>
-        <div class="wiz-warn">⚠️「このアプリはGoogleで確認されていません」と出たら：<br>「<strong>詳細</strong>」→「<strong>安全ではないページに移動</strong>」→「<strong>許可</strong>」をタップ。自分のスクリプトなので安全です。</div>
-      </div>
-
-      <!-- Step 4: URLを貼り付け -->
-      <div class="wiz-step" id="ws4">
-        <div class="wiz-action-banner">
-          <div class="wiz-action-num">最後のステップ</div>
-          <div class="wiz-action-txt">デプロイ完了画面のURLをここに貼り付ける</div>
-        </div>
-        <div class="wiz-box" style="margin-bottom:10px">
-          <div class="wiz-box-title">URLのコピー方法</div>
-          <div class="wiz-step-row"><div class="wiz-step-num">1</div><div class="wiz-step-txt">GASのタブに切り替える</div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">2</div><div class="wiz-step-txt">デプロイ完了画面の「ウェブアプリのURL」をコピー<br><span style="color:var(--text3);font-size:10px">https://script.google.com/macros/s/〇〇〇/exec</span></div></div>
-          <div class="wiz-step-row"><div class="wiz-step-num">3</div><div class="wiz-step-txt">このアプリに戻って下の欄に貼り付け</div></div>
-        </div>
-        <input class="wiz-url-inp" id="wiz-url-inp" type="url" placeholder="https://script.google.com/macros/s/...">
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">設定後はホーム画面の⚙️からいつでも変更できます。</div>
-      </div>
-
-    </div>
-    <div class="wiz-actions">
-      <button class="wiz-skip" id="wiz-skip">後で設定する</button>
-      <button class="wiz-next" id="wiz-next">設定をはじめる →</button>
-    </div>
-  </div>
-</div>
-
-<!-- PWA Service Worker登録 -->
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
