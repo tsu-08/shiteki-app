@@ -1306,6 +1306,7 @@ function openOv(id){ document.getElementById(id).classList.add('on'); }
 function closeOv(id){ document.getElementById(id).classList.remove('on'); }
 
 // ─── UTILS ───────────────────────────────────────────
+function xe(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function installApp(){
   if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; }); }
   else { showToast('ブラウザのメニューから「ホーム画面に追加」を選択してください','ok'); }
