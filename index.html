@@ -1517,10 +1517,11 @@ async function generateExcel(){
 
       // ── 行3〜6：写真行 ──
       // パターンA：縦横比固定・セル内最大フィット・中央配置
-      // 単位を全てpxに統一（EMU混在バグを修正）
-      // exceljs: ext.width/height=px, nativeColOff/RowOff=EMU(1px=9525EMU)
-      const CELL_W_PX = COL_W * 7;      // 44*7=308px
-      const CELL_H_PX = ROW_H_PHOTO;    // 210px（exceljsはpt≒px）
+      // 正確なpx換算:
+      //   列幅: width * MDW + 5 (MDW=7px, メイリオ11pt@96dpi)
+      //   行高: height(pt) * 96/72 (96dpiスクリーン換算)
+      const CELL_W_PX = Math.floor(COL_W * 7 + 5);   // 44*7+5=313px
+      const CELL_H_PX = Math.floor(ROW_H_PHOTO * 96 / 72); // 210*96/72=280px
       const PAD_PX    = 3;              // 内側余白px
 
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
