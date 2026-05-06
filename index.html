@@ -1029,9 +1029,9 @@ function renderPreviewGrid(srcs){
   const grid=document.getElementById('prev-grid'); grid.innerHTML='';
 
   const {side, idx} = _photoCtx;
-  // 新スロット設計: 左4枚(0-3) + 右4枚(4-7)
-  const startFlat = (side === 'right' ? 4 : 0) + idx;
-  const cellNames = ['左①','左②','左③','左④','右①','右②','右③','右④'];
+  // 左右交互スロット設計
+  const startFlat = idx * 2 + (side === 'right' ? 1 : 0);
+  const cellNames = ['左①','右①','左②','右②','左③','右③','左④','右④'];
 
   srcs.forEach((src, fi)=>{
     const orderPos = _previewOrder.indexOf(fi);
@@ -1088,13 +1088,14 @@ function placePhotos(srcs){
   const startRowIdx = session.rows.findIndex(r => r.id === rid);
   if(startRowIdx < 0) return;
 
-  // スロット設計：1シート = 左4枚(slot0-3) + 右4枚(slot4-7) = 8枚
-  // slot0=LP[0], slot1=LP[1], slot2=LP[2], slot3=LP[3]
-  // slot4=RP[0], slot5=RP[1], slot6=RP[2], slot7=RP[3]
+  // スロット設計：左右交互・シートをまたいで連続
+  // slot0=LP[0], slot1=RP[0], slot2=LP[1], slot3=RP[1]
+  // slot4=LP[2], slot5=RP[2], slot6=LP[3], slot7=RP[3]
+  // slot8（次シート）=LP[0], slot9=RP[0] … 以降同様
   const slotsPerSheet = 8;
   const startSlot = startRowIdx * slotsPerSheet
-                  + (side === 'right' ? 4 : 0)
-                  + idx;
+                  + idx * 2
+                  + (side === 'right' ? 1 : 0);
 
   let addedSheets = 0;
 
@@ -1110,10 +1111,11 @@ function placePhotos(srcs){
     }
 
     const targetRow = session.rows[sheetIdx];
-    if(slotInSheet < 4){
-      targetRow.LP[slotInSheet] = src;
+    // 偶数スロット=左、奇数スロット=右
+    if(slotInSheet % 2 === 0){
+      targetRow.LP[Math.floor(slotInSheet / 2)] = src;
     } else {
-      targetRow.RP[slotInSheet - 4] = src;
+      targetRow.RP[Math.floor(slotInSheet / 2)] = src;
     }
   });
 
