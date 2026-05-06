@@ -1452,7 +1452,7 @@ async function generateExcel(){
     const COL_W       = 44;   // 列幅（文字単位）→ 約98mm × 2列 ≒ 196mm
     const ROW_H_HDR   = 23;   // ヘッダー行高（pt）≒ 8mm
     const ROW_H_SUB   = 14;   // サブヘッダー行高（pt）≒ 5mm
-    const ROW_H_PHOTO = 210;  // 写真行高（pt）≒ 74mm → 4:3写真がセルぴったり
+    const ROW_H_PHOTO = 270;  // exceljsでの指定値→Excelで180pt表示（換算比1.5）
     const PHOTO_ROWS  = 4;
     const TOTAL_ROWS  = PHOTO_ROWS + 2; // 6行固定
 
@@ -1516,7 +1516,14 @@ async function generateExcel(){
       s2R.alignment = { horizontal:'left', vertical:'middle' };
 
       // ── 行3〜6：写真行 ──
-      // 文字列範囲指定でセルにフィット（縦横比はセルに合わせる）
+      // 画像配置：縦横比固定・セル内フィット・中央配置
+      // セルEMU確定値（COL_W=44, ROW_H=180）
+      const CELL_W_PX  = 308;       // 列幅44文字のpx幅
+      const CELL_H_PX  = 240;       // Excel行高180pt * 96/72 = 240px
+      const CELL_W_EMU = 2933700;   // 308px * 9525
+      const CELL_H_EMU = 2286000;   // Excel行高180pt * 12700
+      const PAD        = 6;         // 内側余白px
+
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
         const rowNum = pi + 3;
         ws.getRow(rowNum).height = ROW_H_PHOTO;
@@ -1528,10 +1535,22 @@ async function generateExcel(){
         const lPhoto = row.LP && row.LP[pi];
         if(lPhoto && lPhoto.startsWith('data:')){
           try {
-            const imgId = addImageToWorkbook(wb, lPhoto);
-            const col   = String.fromCharCode(64 + 1); // 'A'
-            const range = `${col}${rowNum}:${col}${rowNum}`;
-            ws.addImage(imgId, range);
+            const imgId  = addImageToWorkbook(wb, lPhoto);
+            const nat    = await getImageNaturalSize(lPhoto);
+            const avW    = CELL_W_PX - PAD * 2;
+            const avH    = CELL_H_PX - PAD * 2;
+            const scale  = Math.min(avW / nat.w, avH / nat.h);
+            const iw     = Math.floor(nat.w * scale);
+            const ih     = Math.floor(nat.h * scale);
+            const offX   = PAD + Math.floor((avW - iw) / 2);
+            const offY   = PAD + Math.floor((avH - ih) / 2);
+            ws.addImage(imgId, {
+              tl:  { col: 0, row: rowNum - 1,
+                     nativeColOff: Math.floor(offX / CELL_W_PX * CELL_W_EMU),
+                     nativeRowOff: Math.floor(offY / CELL_H_PX * CELL_H_EMU) },
+              ext: { width: iw, height: ih },
+              editAs: 'oneCell'
+            });
           } catch(e){ lCell.value = '（写真エラー）'; }
         }
 
@@ -1543,8 +1562,21 @@ async function generateExcel(){
         if(rPhoto && rPhoto.startsWith('data:')){
           try {
             const imgId2 = addImageToWorkbook(wb, rPhoto);
-            const range2 = `B${rowNum}:B${rowNum}`;
-            ws.addImage(imgId2, range2);
+            const nat2   = await getImageNaturalSize(rPhoto);
+            const avW2   = CELL_W_PX - PAD * 2;
+            const avH2   = CELL_H_PX - PAD * 2;
+            const scale2 = Math.min(avW2 / nat2.w, avH2 / nat2.h);
+            const iw2    = Math.floor(nat2.w * scale2);
+            const ih2    = Math.floor(nat2.h * scale2);
+            const offX2  = PAD + Math.floor((avW2 - iw2) / 2);
+            const offY2  = PAD + Math.floor((avH2 - ih2) / 2);
+            ws.addImage(imgId2, {
+              tl:  { col: 1, row: rowNum - 1,
+                     nativeColOff: Math.floor(offX2 / CELL_W_PX * CELL_W_EMU),
+                     nativeRowOff: Math.floor(offY2 / CELL_H_PX * CELL_H_EMU) },
+              ext: { width: iw2, height: ih2 },
+              editAs: 'oneCell'
+            });
           } catch(e){ rCell.value = '（写真エラー）'; }
         } else if(rText){
           rCell.value = formatCellText(rText);
@@ -1599,6 +1631,15 @@ function formatCellText(text){
   if(!text) return '';
   // テンプレートの \n（バックスラッシュn）と実際の改行コードを両方対応
   return text.replace(/\\n/g, '\n');
+}
+
+function getImageNaturalSize(dataUrl){
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve({ w: 1000, h: 750 }); // デフォルト4:3
+    img.src = dataUrl;
+  });
 }
 
 function addImageToWorkbook(wb, dataUrl){
