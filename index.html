@@ -1317,19 +1317,15 @@ async function generateExcel(){
     wb.creator = '現場検査記録アプリ';
     wb.created = new Date();
 
-    // レイアウト定数（PDFのmedia printに合わせる）
-    // PDF: @page margin:8mm, pcell height:56mm, 2列
-    // A4幅210mm - 余白16mm = 194mm → 1列97mm
-    // exceljsの列幅1単位≒8px, 97mm=366px → 366/8=46
-    const COL_W       = 46;   // 列幅（文字単位）≒97mm
-    const ROW_H_HDR   = 23;   // ヘッダー行（8mm相当）
-    const ROW_H_SUB   = 14;   // サブヘッダー（5mm相当）
-    const ROW_H_PHOTO = 159;  // 写真行（56mm相当）
+    // ── レイアウト定数（A4縦・4:3写真最適化）──
+    // セル幅98mm × 高さ74mm → 4:3写真(1.33)がセルぴったり
+    // 16:9写真は上下に余白、fitToHeight=1で印刷時自動縮小(約96%)
+    const COL_W       = 44;   // 列幅（文字単位）→ 約98mm × 2列 ≒ 196mm
+    const ROW_H_HDR   = 23;   // ヘッダー行高（pt）≒ 8mm
+    const ROW_H_SUB   = 14;   // サブヘッダー行高（pt）≒ 5mm
+    const ROW_H_PHOTO = 210;  // 写真行高（pt）≒ 74mm → 4:3写真がセルぴったり
     const PHOTO_ROWS  = 4;
-    const TOTAL_ROWS  = PHOTO_ROWS + 2;
-
-    // tl/br方式のためCELL_W_PX/CELL_H_PXは不要
-    // （セル境界をrow/col番号で直接指定）
+    const TOTAL_ROWS  = PHOTO_ROWS + 2; // 6行固定
 
     const inspStr = [session.insp1, session.insp2].filter(Boolean).join(' / ');
     const dateStr = formatDateJP(session.date);
@@ -1355,7 +1351,7 @@ async function generateExcel(){
         showGridLines: false,
         horizontalCentered: true
       };
-      // PDFの @page margin:8mm に合わせる（8mm = 0.315inch）
+      // 余白8mm = 0.315inch（PDFの@pageと統一）
       ws.pageMargins = {
         left:   0.315, right:  0.315,
         top:    0.315, bottom: 0.315,
@@ -1391,9 +1387,12 @@ async function generateExcel(){
       s2R.alignment = { horizontal:'left', vertical:'middle' };
 
       // ── 行3〜6：写真行 ──
-      // tl/br方式：セル境界を直接指定→絶対にはみ出さない
-      // 内側余白: 6px = 6*9525 = 57150 EMU
-      const M_EMU = 57150; // 6px余白
+      // パターンA：縦横比固定・セル内に最大フィット・中央配置
+      // セルサイズ: COL_W=44(約98mm) × ROW_H_PHOTO=210pt(約74mm)
+      // 1px = 9525 EMU
+      const CELL_W_EMU = Math.round(COL_W * 8.43 * 9525);   // ≈3536670 EMU
+      const CELL_H_EMU = Math.round(ROW_H_PHOTO * 9525);     // ≈2000250 EMU
+      const PAD_EMU    = 19050; // 2px内側余白
 
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
         const rowNum = pi + 3;
@@ -1407,11 +1406,21 @@ async function generateExcel(){
         if(lPhoto && lPhoto.startsWith('data:')){
           try {
             const imgId = addImageToWorkbook(wb, lPhoto);
+            const nat   = await getImageNaturalSize(lPhoto);
+            // 縦横比固定でセルに収まる最大サイズを計算（EMU単位）
+            const avW = CELL_W_EMU - PAD_EMU * 2;
+            const avH = CELL_H_EMU - PAD_EMU * 2;
+            const scale = Math.min(avW / nat.w, avH / nat.h);
+            const imgW  = Math.round(nat.w * scale);
+            const imgH  = Math.round(nat.h * scale);
+            // 中央寄せオフセット
+            const offX  = PAD_EMU + Math.round((avW - imgW) / 2);
+            const offY  = PAD_EMU + Math.round((avH - imgH) / 2);
             ws.addImage(imgId, {
-              tl: { col: 0, row: rowNum - 1,
-                    nativeColOff: M_EMU, nativeRowOff: M_EMU },
-              br: { col: 1, row: rowNum,
-                    nativeColOff: -M_EMU, nativeRowOff: -M_EMU },
+              tl:  { col: 0, row: rowNum - 1,
+                     nativeColOff: offX, nativeRowOff: offY },
+              ext: { width: Math.round(imgW / 9525),
+                     height: Math.round(imgH / 9525) },
               editAs: 'oneCell'
             });
           } catch(e){ lCell.value = '（写真エラー）'; }
@@ -1425,11 +1434,19 @@ async function generateExcel(){
         if(rPhoto && rPhoto.startsWith('data:')){
           try {
             const imgId2 = addImageToWorkbook(wb, rPhoto);
+            const nat2   = await getImageNaturalSize(rPhoto);
+            const avW = CELL_W_EMU - PAD_EMU * 2;
+            const avH = CELL_H_EMU - PAD_EMU * 2;
+            const scale2 = Math.min(avW / nat2.w, avH / nat2.h);
+            const imgW2  = Math.round(nat2.w * scale2);
+            const imgH2  = Math.round(nat2.h * scale2);
+            const offX2  = PAD_EMU + Math.round((avW - imgW2) / 2);
+            const offY2  = PAD_EMU + Math.round((avH - imgH2) / 2);
             ws.addImage(imgId2, {
-              tl: { col: 1, row: rowNum - 1,
-                    nativeColOff: M_EMU, nativeRowOff: M_EMU },
-              br: { col: 2, row: rowNum,
-                    nativeColOff: -M_EMU, nativeRowOff: -M_EMU },
+              tl:  { col: 1, row: rowNum - 1,
+                     nativeColOff: offX2, nativeRowOff: offY2 },
+              ext: { width: Math.round(imgW2 / 9525),
+                     height: Math.round(imgH2 / 9525) },
               editAs: 'oneCell'
             });
           } catch(e){ rCell.value = '（写真エラー）'; }
