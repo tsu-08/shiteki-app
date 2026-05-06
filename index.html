@@ -1452,7 +1452,14 @@ async function generateExcel(){
     const COL_W       = 44;   // 列幅（文字単位）→ 約98mm × 2列 ≒ 196mm
     const ROW_H_HDR   = 23;   // ヘッダー行高（pt）≒ 8mm
     const ROW_H_SUB   = 14;   // サブヘッダー行高（pt）≒ 5mm
-    const ROW_H_PHOTO = 270;  // exceljsでの指定値→Excelで180pt表示（換算比1.5）
+    // DPIに応じてexceljsのheight値を補正
+    // PC(96dpi): exceljs値×2/3=Excel表示pt → 180ptにするには270
+    // スマホ(高DPI): exceljs値=Excel表示pt → 180ptにするには180
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const ROW_H_EXCEL = 180; // Excelで表示したい行高さ(pt)
+    const ROW_H_PHOTO = devicePixelRatio >= 2
+      ? ROW_H_EXCEL          // スマホ(2x以上): そのまま
+      : Math.round(ROW_H_EXCEL * 1.5); // PC(1x): 1.5倍して補正
     const PHOTO_ROWS  = 4;
     const TOTAL_ROWS  = PHOTO_ROWS + 2; // 6行固定
 
