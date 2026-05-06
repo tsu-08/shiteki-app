@@ -114,6 +114,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .type-bar .tk{font-size:10px;color:var(--text2);margin-left:auto}
 
 /* SHEET ROW (1 指摘 = 1 row) */
+.srow-print-hdr{display:none;background:var(--navy);color:#fff;padding:6px 10px;font-size:10px;font-weight:700;line-height:1.5}
+.srow-print-hdr .ph-type{background:var(--nlight);color:var(--navy);padding:3px 8px;font-size:10px;font-weight:900;border-top:1px solid var(--border)}
 .srow{border-bottom:2px solid var(--border2)}
 .srow:last-child{border-bottom:none}
 .srow-hdrs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-bottom:1px solid var(--border)}
@@ -179,7 +181,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* Template picker modal */
 .tmpl-scroll{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
-.topt{padding:10px 12px;border-radius:7px;border:1.5px solid var(--border);
+.topt{padding:10px 12px;border-radius:7px;border:1.5px solid var(--border);text-align:left;
   background:var(--bg);font-size:12px;line-height:1.55;cursor:pointer;
   font-family:var(--font);text-align:left;width:100%;color:var(--text);transition:all .15s}
 .topt.on{background:var(--nlight);border-color:var(--navy);color:var(--navy);font-weight:700}
@@ -261,8 +263,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   #pnl-sheet{display:block !important;}
   .sheet-wrap{padding:0 !important;margin:0 !important;}
   .sheet{border:none !important;box-shadow:none !important;border-radius:0 !important;width:100% !important;}
-  .srow{page-break-inside:avoid;break-inside:avoid;margin-bottom:0 !important;}
+  .srow{page-break-inside:avoid;break-inside:avoid;margin-bottom:0 !important;page-break-before:always;}
+  .srow:first-child{page-break-before:auto;}
   .cell-pair{page-break-inside:avoid;break-inside:avoid;}
+  .srow-print-hdr{display:block !important;}
+  #sh-hdr{display:none !important;}
   .pcell{aspect-ratio:auto !important;height:56mm !important;background:#fff !important;}
   .pcell.R{background:#f8fcfa !important;}
   .pcell img{width:100% !important;height:100% !important;object-fit:contain !important;background:#fff !important;}
@@ -885,6 +890,13 @@ function renderSheet(){
 function buildRow(row, idx){
   const div=document.createElement('div'); div.className='srow'; div.id='srow-'+row.id;
 
+  // 印刷用ヘッダー（各シートの先頭に表示、通常時は非表示）
+  const ph=document.createElement('div'); ph.className='srow-print-hdr';
+  const inspStr=[session.insp1,session.insp2].filter(Boolean).join(' / ');
+  ph.innerHTML=`${xe(session.owner)} 様邸　${formatDateJP(session.date)}　担当：${xe(inspStr)}`
+    + `<div class="ph-type">${xe(session.type)}</div>`;
+  div.appendChild(ph);
+
   // Col headers
   const hdrs=document.createElement('div'); hdrs.className='srow-hdrs';
   const lh=document.createElement('div'); lh.className='srow-hdr L'; lh.textContent='指摘事項 No.'+(idx+1);
@@ -943,8 +955,9 @@ function buildRightCell(rid, idx, src, rtxt){
     cell.className='rtxt-cell';
     cell.dataset.act='open-right'; cell.dataset.rid=rid; cell.dataset.idx=idx;
     const t=document.createElement('div');
-    t.style.cssText='font-size:11px;line-height:1.55;flex:1;width:100%;overflow:hidden';
-    t.textContent=rtxt;
+    t.style.cssText='font-size:11px;line-height:1.55;flex:1;width:100%;overflow:hidden;white-space:pre-wrap;word-break:break-all;';
+    // \n を実際の改行として表示
+    t.textContent=rtxt.replace(/\\n/g,'\n');
     const lbl=document.createElement('div'); lbl.className='pcell-lbl'; lbl.textContent='是正コメント';
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-rtxt'; rm.dataset.rid=rid; rm.dataset.idx=idx;
@@ -1165,10 +1178,23 @@ function openRtxtModal(rid, idx){
   const list=templates[type]||[];
   const wrap=document.getElementById('rtxt-tmpl-list'); wrap.innerHTML='';
   list.forEach((t,i)=>{
-    const b=document.createElement('button'); b.className='topt'; b.textContent=(i+1)+'. '+t;
+    const b=document.createElement('button'); b.className='topt';
+    // 1行目（指摘タイトル）を太字で表示、改行で区切る
+    const lines=t.split('\n');
+    const title=document.createElement('div');
+    title.style.cssText='font-weight:700;margin-bottom:2px;';
+    title.textContent=(i+1)+'. '+lines[0];
+    b.appendChild(title);
+    lines.slice(1).forEach(line=>{
+      if(!line.trim()) return;
+      const sub=document.createElement('div');
+      sub.style.cssText='font-size:10px;color:var(--text2);font-weight:400;white-space:pre-wrap;';
+      sub.textContent=line;
+      b.appendChild(sub);
+    });
     b.addEventListener('click',()=>{
       document.querySelectorAll('#rtxt-tmpl-list .topt').forEach(o=>o.classList.remove('on'));
-      b.classList.add('on'); document.getElementById('rtxt-ta').value=t;
+      b.classList.add('on'); document.getElementById('rtxt-ta').value=t.replace(/\\n/g,'\n');
     });
     wrap.appendChild(b);
   });
@@ -1291,18 +1317,21 @@ async function generateExcel(){
     wb.creator = '現場検査記録アプリ';
     wb.created = new Date();
 
-    // レイアウト定数（A4縦・余白0.25inch基準）
-    const COL_W       = 43;   // 列幅（文字単位）≒98mm → 2列でA4幅にフィット
-    const ROW_H_HDR   = 24;   // ヘッダー行高さ（pt）
-    const ROW_H_SUB   = 18;
-    const ROW_H_PHOTO = 188;  // 写真行高さ（pt）≒66mm × 4行 = 264mm
+    // レイアウト定数（PDFのmedia printに合わせる）
+    // PDF: @page margin:8mm, pcell height:56mm, 2列
+    // A4幅210mm - 余白16mm = 194mm → 1列97mm
+    // exceljsの列幅1単位≒8px, 97mm=366px → 366/8=46
+    const COL_W       = 46;   // 列幅（文字単位）≒97mm
+    const ROW_H_HDR   = 23;   // ヘッダー行（8mm相当）
+    const ROW_H_SUB   = 14;   // サブヘッダー（5mm相当）
+    const ROW_H_PHOTO = 159;  // 写真行（56mm相当）
     const PHOTO_ROWS  = 4;
     const TOTAL_ROWS  = PHOTO_ROWS + 2;
 
-    // 画像サイズ計算（セルpx = 列幅mm/25.4*96）
-    // COL_W=43 → 97.5mm → 368px、ROW_H_PHOTO=188pt → 66.4mm → 250px
-    const CELL_W_PX = Math.round(COL_W * 2.267 / 25.4 * 96); // ≈368px
-    const CELL_H_PX = Math.round(ROW_H_PHOTO * 0.3528 / 25.4 * 96); // ≈250px
+    // 画像ピクセルサイズ（ext指定用）
+    // 列幅46×8px=368px、行高159pt=159px
+    const CELL_W_PX = COL_W * 8;  // 368px
+    const CELL_H_PX = ROW_H_PHOTO; // 159px
 
     const inspStr = [session.insp1, session.insp2].filter(Boolean).join(' / ');
     const dateStr = formatDateJP(session.date);
@@ -1323,15 +1352,16 @@ async function generateExcel(){
         orientation: 'portrait',
         fitToPage: true,
         fitToWidth: 1,
-        fitToHeight: 1,        // 1ページに縦も収める
+        fitToHeight: 1,
         printArea: 'A1:B' + TOTAL_ROWS,
         showGridLines: false,
         horizontalCentered: true
       };
+      // PDFの @page margin:8mm に合わせる（8mm = 0.315inch）
       ws.pageMargins = {
-        left:   0.2,  right:  0.2,
-        top:    0.2,  bottom: 0.2,
-        header: 0.0,  footer: 0.0
+        left:   0.315, right:  0.315,
+        top:    0.315, bottom: 0.315,
+        header: 0.0,   footer: 0.0
       };
 
       // ── 行1：ヘッダー ──
@@ -1363,9 +1393,9 @@ async function generateExcel(){
       s2R.alignment = { horizontal:'left', vertical:'middle' };
 
       // ── 行3〜6：写真行 ──
-      const MARGIN = 3; // セル内余白px（最小限）
-      const cellW  = CELL_W_PX - MARGIN * 2;
-      const cellH  = CELL_H_PX - MARGIN * 2;
+      const MARGIN = 4; // セル内余白px
+      const cellW  = CELL_W_PX - MARGIN * 2;  // 360px
+      const cellH  = CELL_H_PX - MARGIN * 2;  // 151px
 
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
         const rowNum = pi + 3;
@@ -1466,8 +1496,8 @@ async function generateExcel(){
 // テキスト整形：改行コードを正規化し、全文字が表示されるよう調整
 function formatCellText(text){
   if(!text) return '';
-  // \n を実際の改行に変換
-  return text.replace(/\\n/g, '\n').replace(/\n/g, '\n');
+  // テンプレートの \n（バックスラッシュn）と実際の改行コードを両方対応
+  return text.replace(/\\n/g, '\n');
 }
 
 // 画像のサイズをBase64から取得して縦横比を維持した最大サイズを返す
