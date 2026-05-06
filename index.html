@@ -1328,10 +1328,8 @@ async function generateExcel(){
     const PHOTO_ROWS  = 4;
     const TOTAL_ROWS  = PHOTO_ROWS + 2;
 
-    // 画像ピクセルサイズ（ext指定用）
-    // 列幅46×8px=368px、行高159pt=159px
-    const CELL_W_PX = COL_W * 8;  // 368px
-    const CELL_H_PX = ROW_H_PHOTO; // 159px
+    // tl/br方式のためCELL_W_PX/CELL_H_PXは不要
+    // （セル境界をrow/col番号で直接指定）
 
     const inspStr = [session.insp1, session.insp2].filter(Boolean).join(' / ');
     const dateStr = formatDateJP(session.date);
@@ -1393,9 +1391,9 @@ async function generateExcel(){
       s2R.alignment = { horizontal:'left', vertical:'middle' };
 
       // ── 行3〜6：写真行 ──
-      const MARGIN = 4; // セル内余白px
-      const cellW  = CELL_W_PX - MARGIN * 2;  // 360px
-      const cellH  = CELL_H_PX - MARGIN * 2;  // 151px
+      // tl/br方式：セル境界を直接指定→絶対にはみ出さない
+      // 内側余白: 6px = 6*9525 = 57150 EMU
+      const M_EMU = 57150; // 6px余白
 
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
         const rowNum = pi + 3;
@@ -1409,15 +1407,11 @@ async function generateExcel(){
         if(lPhoto && lPhoto.startsWith('data:')){
           try {
             const imgId = addImageToWorkbook(wb, lPhoto);
-            const nat = await getImageNaturalSize(lPhoto);
-            const {w, h} = fitSize(nat.w, nat.h, cellW, cellH);
-            const offsetX = Math.floor((cellW - w) / 2) + MARGIN;
-            const offsetY = Math.floor((cellH - h) / 2) + MARGIN;
             ws.addImage(imgId, {
               tl: { col: 0, row: rowNum - 1,
-                    nativeColOff: Math.round(offsetX * 9525),
-                    nativeRowOff: Math.round(offsetY * 9525) },
-              ext: { width: w, height: h },
+                    nativeColOff: M_EMU, nativeRowOff: M_EMU },
+              br: { col: 1, row: rowNum,
+                    nativeColOff: -M_EMU, nativeRowOff: -M_EMU },
               editAs: 'oneCell'
             });
           } catch(e){ lCell.value = '（写真エラー）'; }
@@ -1431,15 +1425,11 @@ async function generateExcel(){
         if(rPhoto && rPhoto.startsWith('data:')){
           try {
             const imgId2 = addImageToWorkbook(wb, rPhoto);
-            const nat2 = await getImageNaturalSize(rPhoto);
-            const {w, h} = fitSize(nat2.w, nat2.h, cellW, cellH);
-            const offsetX = Math.floor((cellW - w) / 2) + MARGIN;
-            const offsetY = Math.floor((cellH - h) / 2) + MARGIN;
             ws.addImage(imgId2, {
               tl: { col: 1, row: rowNum - 1,
-                    nativeColOff: Math.round(offsetX * 9525),
-                    nativeRowOff: Math.round(offsetY * 9525) },
-              ext: { width: w, height: h },
+                    nativeColOff: M_EMU, nativeRowOff: M_EMU },
+              br: { col: 2, row: rowNum,
+                    nativeColOff: -M_EMU, nativeRowOff: -M_EMU },
               editAs: 'oneCell'
             });
           } catch(e){ rCell.value = '（写真エラー）'; }
