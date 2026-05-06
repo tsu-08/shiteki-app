@@ -265,6 +265,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   .sheet{border:none !important;box-shadow:none !important;border-radius:0 !important;width:100% !important;}
   .srow{page-break-inside:avoid;break-inside:avoid;margin-bottom:0 !important;page-break-before:always;}
   .srow:first-child{page-break-before:auto;}
+  .srow:last-child{margin-bottom:0 !important;padding-bottom:0 !important;}
+  .sheet-wrap,.sheet{overflow:hidden !important;}
+  .add-sheet-btn{display:none !important;}
   .cell-pair{page-break-inside:avoid;break-inside:avoid;}
   .srow-print-hdr{display:block !important;}
   #sh-hdr{display:none !important;}
@@ -1014,13 +1017,19 @@ function handleFileInput(input){
     });
     return;
   }
-  // 複数選択：全圧縮してからプレビュー表示
-  Promise.all(files.map(f=>compressImage(f))).then(srcs=>{
+  // 複数選択：選択順を保証するため直列で圧縮
+  (async () => {
+    showToast('📷 写真を処理中… 0/' + files.length, 'warn');
+    const srcs = [];
+    for(let i = 0; i < files.length; i++){
+      srcs.push(await compressImage(files[i]));
+      if(files.length > 3) showToast(`📷 処理中… ${i+1}/${files.length}`, 'warn');
+    }
     _previewFiles = files;
-    _previewOrder = files.map((_,i)=>i);
-    _previewSrcs = srcs; // 圧縮済みデータを保持
+    _previewOrder = files.map((_,i)=>i); // 選択順を維持
+    _previewSrcs  = srcs;
     renderPreviewGrid(srcs);
-  });
+  })();
 }
 
 function showPreview(){
@@ -1290,7 +1299,7 @@ function printAsPdf(){
   const d = (session.date||'').replace(/-/g,'');
   const owner = session.owner||'物件';
   const type = session.type||'';
-  const suggestedName = `【是正完了】${d}　${owner}　${type}`;
+  const suggestedName = `${d}_${owner}様_${type}_検査記録`;
   const originalTitle = document.title;
   document.title = suggestedName;
 
@@ -1483,10 +1492,8 @@ async function generateExcel(){
     });
     const d     = (session.date||'').replace(/-/g,'');
     const fname = d + '_' + ownerStr + '様_' + typeStr + '_検査記録.xlsx';
-    downloadBlob(blob, fname);
-
     saveToArc();
-    showToast('✅ Excelをダウンロードしました','ok');
+    await shareOrDownloadBlob(blob, fname);
 
   } catch(err){
     console.error('Excel生成エラー:', err);
@@ -1532,13 +1539,38 @@ function addImageToWorkbook(wb, dataUrl){
   return wb.addImage({ base64: parts[1], extension: ext });
 }
 
-function downloadBlob(blob, filename){
+// Excel共有：navigator.share()対応ならシート表示、非対応はDL
+async function shareOrDownloadBlob(blob, filename){
+  // navigator.shareがファイル対応しているか確認
+  if(navigator.share && navigator.canShare && navigator.canShare({ files:[new File([blob], filename)] })){
+    try {
+      const file = new File([blob], filename, { type: blob.type });
+      await navigator.share({
+        title: filename,
+        files: [file]
+      });
+      showToast('✅ 共有シートを開きました', 'ok');
+      return;
+    } catch(e){
+      if(e.name === 'AbortError') {
+        showToast('共有をキャンセルしました');
+        return;
+      }
+      // share失敗時はDLにフォールバック
+    }
+  }
+  // フォールバック：通常ダウンロード
   const url = URL.createObjectURL(blob);
   const a   = document.createElement('a');
   a.href = url; a.download = filename;
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
+  showToast('✅ Excelをダウンロードしました', 'ok');
+}
+
+function downloadBlob(blob, filename){
+  shareOrDownloadBlob(blob, filename);
 }
 
 function loadScript(src){
