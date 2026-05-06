@@ -1084,51 +1084,40 @@ function applyPhotos(){
 // 全8セル: [L0,R0,L1,R1,L2,R2,L3,R3]、溢れたら自動でシートを追加
 function placePhotos(srcs){
   const {rid, side, idx} = _photoCtx;
-  let row = getRow(rid); if(!row) return;
+  const startRowIdx = session.rows.findIndex(r => r.id === rid);
+  if(startRowIdx < 0) return;
 
-  // フラット配列（左右交互）全8スロット
-  const flat = [];
-  for(let i=0;i<4;i++){
-    flat.push({side:'left',  idx:i});
-    flat.push({side:'right', idx:i});
-  }
+  // フラット配列：シートをまたいで連続したスロットとして扱う
+  // flat[n] = { rowIdx, side:'left'|'right', idx:0-3 }
+  // タップしたセルの絶対位置（全シートにまたがるフラット座標）
+  const slotsPerSheet = 8;
+  const startSlot = startRowIdx * slotsPerSheet
+                  + idx * 2
+                  + (side === 'right' ? 1 : 0);
 
-  // タップしたセルの位置
-  const startFlat = idx * 2 + (side==='right' ? 1 : 0);
+  let addedSheets = 0;
 
   srcs.forEach((src, i) => {
-    const pos = startFlat + i;
-    if(pos < 8){
-      // 現在のシートに配置
-      const target = flat[pos];
-      if(target.side === 'left') row.LP[target.idx] = src;
-      else                        row.RP[target.idx] = src;
-    } else {
-      // 8枚を超えたら新しいシートを自動追加して左①から配置
-      const rowIdx = session.rows.indexOf(row);
-      const nextRowIdx = rowIdx + 1;
-      // 次のシートが存在しなければ追加
-      if(nextRowIdx >= session.rows.length){
-        session.rows.push(newRow());
-      }
-      row = session.rows[nextRowIdx];
-      const overPos = pos - 8;
-      const target = flat[overPos % 8];
-      if(target.side === 'left') row.LP[target.idx] = src;
-      else                        row.RP[target.idx] = src;
-      // 次のシートが溢れた場合さらに追加（再帰的に対応）
-      if(overPos >= 8){
-        // ここでは最大2シート追加まで対応（実用上十分）
-        if(rowIdx + 2 >= session.rows.length) session.rows.push(newRow());
-        const row2 = session.rows[rowIdx + 2];
-        const target2 = flat[(pos - 16) % 8];
-        if(target2.side === 'left') row2.LP[target2.idx] = src;
-        else                         row2.RP[target2.idx] = src;
-      }
+    const absSlot  = startSlot + i;
+    const sheetIdx = Math.floor(absSlot / slotsPerSheet);
+    const slotInSheet = absSlot % slotsPerSheet;
+
+    // シートが足りなければ追加
+    while(session.rows.length <= sheetIdx){
+      session.rows.push(newRow());
+      addedSheets++;
     }
+
+    const targetRow  = session.rows[sheetIdx];
+    const photoSide  = slotInSheet % 2 === 0 ? 'left' : 'right';
+    const photoIdx   = Math.floor(slotInSheet / 2);
+
+    if(photoSide === 'left') targetRow.LP[photoIdx] = src;
+    else                      targetRow.RP[photoIdx] = src;
   });
-  if(srcs.length > 8 - startFlat){
-    showToast('📋 写真が多いため自動でシートを追加しました', 'ok');
+
+  if(addedSheets > 0){
+    showToast('📋 写真が多いため ' + addedSheets + ' シートを自動追加しました', 'ok');
   }
   renderSheet();
 }
@@ -1365,6 +1354,12 @@ async function generateExcel(){
       s2R.alignment = { horizontal:'left', vertical:'middle' };
 
       // ── 行3〜6：写真行 ──
+      // 列幅・行高からピクセルサイズを算出
+      // exceljs: 列幅1文字≒7.2px, 行高1pt≒1px（96dpi基準）
+      const MARGIN = 4; // セル内余白px
+      const cellW  = Math.floor(COL_W * 7.2) - MARGIN * 2;   // ≒267px
+      const cellH  = ROW_H_PHOTO - MARGIN * 2;                // ≒186px
+
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
         const rowNum = pi + 3;
         ws.getRow(rowNum).height = ROW_H_PHOTO;
@@ -1377,10 +1372,15 @@ async function generateExcel(){
         if(lPhoto && lPhoto.startsWith('data:')){
           try {
             const imgId = addImageToWorkbook(wb, lPhoto);
+            const nat = await getImageNaturalSize(lPhoto);
+            const {w, h} = fitSize(nat.w, nat.h, cellW, cellH);
+            const offsetX = Math.floor((cellW - w) / 2) + MARGIN;
+            const offsetY = Math.floor((cellH - h) / 2) + MARGIN;
             ws.addImage(imgId, {
-              tl: { col: 0, row: rowNum - 1, nativeRowOff: 50000 },
-              br: { col: 1, row: rowNum,     nativeRowOff: -50000 },
-              editAs: 'oneCell'
+              tl: { col: 0, row: rowNum - 1,
+                    nativeColOff: Math.round(offsetX * 9525),
+                    nativeRowOff: Math.round(offsetY * 9525) },
+              ext: { width: w, height: h }
             });
           } catch(e){ lCell.value = '（写真エラー）'; }
         }
@@ -1393,18 +1393,21 @@ async function generateExcel(){
         if(rPhoto && rPhoto.startsWith('data:')){
           try {
             const imgId2 = addImageToWorkbook(wb, rPhoto);
+            const nat2 = await getImageNaturalSize(rPhoto);
+            const {w, h} = fitSize(nat2.w, nat2.h, cellW, cellH);
+            const offsetX = Math.floor((cellW - w) / 2) + MARGIN;
+            const offsetY = Math.floor((cellH - h) / 2) + MARGIN;
             ws.addImage(imgId2, {
-              tl: { col: 1, row: rowNum - 1, nativeRowOff: 50000 },
-              br: { col: 2, row: rowNum,     nativeRowOff: -50000 },
-              editAs: 'oneCell'
+              tl: { col: 1, row: rowNum - 1,
+                    nativeColOff: Math.round(offsetX * 9525),
+                    nativeRowOff: Math.round(offsetY * 9525) },
+              ext: { width: w, height: h }
             });
           } catch(e){ rCell.value = '（写真エラー）'; }
         } else if(rText){
-          // ─ テキスト整形：全文字表示・バランス改行 ─
-          rCell.value   = formatCellText(rText);
-          rCell.font    = { size: 10, name:'メイリオ' };
-          rCell.alignment = { wrapText:true, horizontal:'left', vertical:'top',
-                              indent: 1 };
+          rCell.value = formatCellText(rText);
+          rCell.font  = { size: 10, name:'メイリオ' };
+          rCell.alignment = { wrapText:true, horizontal:'left', vertical:'top', indent:1 };
         }
 
         // セル罫線
@@ -1456,6 +1459,25 @@ function formatCellText(text){
   if(!text) return '';
   // \n を実際の改行に変換
   return text.replace(/\\n/g, '\n').replace(/\n/g, '\n');
+}
+
+// 画像のサイズをBase64から取得して縦横比を維持した最大サイズを返す
+function getImageNaturalSize(dataUrl){
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve({ w: 1, h: 1 });
+    img.src = dataUrl;
+  });
+}
+
+function fitSize(naturalW, naturalH, maxW, maxH){
+  if(!naturalW || !naturalH) return { w: maxW, h: maxH };
+  const scale = Math.min(maxW / naturalW, maxH / naturalH);
+  return {
+    w: Math.floor(naturalW * scale),
+    h: Math.floor(naturalH * scale)
+  };
 }
 
 function addImageToWorkbook(wb, dataUrl){
