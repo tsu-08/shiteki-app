@@ -1516,19 +1516,7 @@ async function generateExcel(){
       s2R.alignment = { horizontal:'left', vertical:'middle' };
 
       // ── 行3〜6：写真行 ──
-      // パターンA：縦横比固定・セル内最大フィット・中央配置
-      // exceljsのnativeColOff/nativeRowOffの単位:
-      //   nativeColOff: (オフセットpx/セル幅px) * (col.width * 10000)
-      //   nativeRowOff: (オフセットpx/セル高px) * (row.height * 10000)
-      // ext.width/height: スクリーンpx単位（内部で*9525してEMUに変換される）
-      // セルpx: 列幅→Microsoft公式, 行高→pt*96/72
-      const MDW        = 7;   // メイリオ11pt@96dpiの最大数字幅
-      const CELL_W_PX  = Math.floor(((256*COL_W + Math.floor(128/MDW))/256)*MDW); // 308px
-      const CELL_H_PX  = Math.floor(ROW_H_PHOTO * 96 / 72);  // 280px
-      const COL_UNIT   = Math.floor(COL_W * 10000);           // 440000
-      const ROW_UNIT   = Math.floor(ROW_H_PHOTO * 10000);     // 2100000
-      const PAD_PX     = 4;  // 内側余白px
-
+      // 文字列範囲指定でセルにフィット（縦横比はセルに合わせる）
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
         const rowNum = pi + 3;
         ws.getRow(rowNum).height = ROW_H_PHOTO;
@@ -1541,20 +1529,9 @@ async function generateExcel(){
         if(lPhoto && lPhoto.startsWith('data:')){
           try {
             const imgId = addImageToWorkbook(wb, lPhoto);
-            const nat   = await getImageNaturalSize(lPhoto);
-            const avW   = CELL_W_PX - PAD_PX * 2;
-            const avH   = CELL_H_PX - PAD_PX * 2;
-            const scale = Math.min(avW / nat.w, avH / nat.h);
-            const imgW  = Math.round(nat.w * scale);
-            const imgH  = Math.round(nat.h * scale);
-            const offX  = PAD_PX + Math.floor((avW - imgW) / 2);
-            const offY  = PAD_PX + Math.floor((avH - imgH) / 2);
-            ws.addImage(imgId, {
-              tl:  { col: 0, row: rowNum - 1,
-                     nativeColOff: Math.floor(offX / CELL_W_PX * COL_UNIT),
-                     nativeRowOff: Math.floor(offY / CELL_H_PX * ROW_UNIT) },
-              ext: { width: imgW, height: imgH }
-            });
+            const col   = String.fromCharCode(64 + 1); // 'A'
+            const range = `${col}${rowNum}:${col}${rowNum}`;
+            ws.addImage(imgId, range);
           } catch(e){ lCell.value = '（写真エラー）'; }
         }
 
@@ -1566,20 +1543,8 @@ async function generateExcel(){
         if(rPhoto && rPhoto.startsWith('data:')){
           try {
             const imgId2 = addImageToWorkbook(wb, rPhoto);
-            const nat2   = await getImageNaturalSize(rPhoto);
-            const avW2   = CELL_W_PX - PAD_PX * 2;
-            const avH2   = CELL_H_PX - PAD_PX * 2;
-            const scale2 = Math.min(avW2 / nat2.w, avH2 / nat2.h);
-            const imgW2  = Math.round(nat2.w * scale2);
-            const imgH2  = Math.round(nat2.h * scale2);
-            const offX2  = PAD_PX + Math.floor((avW2 - imgW2) / 2);
-            const offY2  = PAD_PX + Math.floor((avH2 - imgH2) / 2);
-            ws.addImage(imgId2, {
-              tl:  { col: 1, row: rowNum - 1,
-                     nativeColOff: Math.floor(offX2 / CELL_W_PX * COL_UNIT),
-                     nativeRowOff: Math.floor(offY2 / CELL_H_PX * ROW_UNIT) },
-              ext: { width: imgW2, height: imgH2 }
-            });
+            const range2 = `B${rowNum}:B${rowNum}`;
+            ws.addImage(imgId2, range2);
           } catch(e){ rCell.value = '（写真エラー）'; }
         } else if(rText){
           rCell.value = formatCellText(rText);
@@ -1634,28 +1599,6 @@ function formatCellText(text){
   if(!text) return '';
   // テンプレートの \n（バックスラッシュn）と実際の改行コードを両方対応
   return text.replace(/\\n/g, '\n');
-}
-
-// 画像のサイズをBase64から取得して縦横比を維持した最大サイズを返す
-function getImageNaturalSize(dataUrl){
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve({ w: 1, h: 1 });
-    img.src = dataUrl;
-  });
-}
-
-function fitSize(naturalW, naturalH, maxW, maxH){
-  if(!naturalW || !naturalH) return { w: maxW, h: maxH };
-  // 縦横比を維持しつつ最大化
-  const scaleW = maxW / naturalW;
-  const scaleH = maxH / naturalH;
-  const scale  = Math.min(scaleW, scaleH);
-  return {
-    w: Math.min(Math.round(naturalW * scale), maxW),
-    h: Math.min(Math.round(naturalH * scale), maxH)
-  };
 }
 
 function addImageToWorkbook(wb, dataUrl){
