@@ -475,20 +475,153 @@ let _rtxtTarget = null;  // {rid, idx}
 const TYPES = ['配筋','アンカー','基礎','上棟・パネル完成','防水','断熱','下地','造作完了','外装','竣工','その他'];
 const DEFAULT_NAMES = ['市村 崇','市村 博','新井 潤','依田 潤一','鶴岡 諭'];
 const DEFAULT_TMPL = {
-  '配筋':['かぶり厚さ不足。所定のかぶり厚さを確保すること。','鉄筋継手長さ不足。所定の継手長さを確保すること。','スペーサー配置不足。適切なスペーサーを設置すること。','鉄筋ピッチが設計と異なる。設計図通りに是正すること。','鉄筋結束不良。適切に結束し直すこと。','定着長さ不足。所定の定着長さを確保すること。','鉄筋径・本数が設計と異なる。修正すること。','ハッチ筋欠損・不足。設計通り追加設置すること。','開口補強筋施工不良。設計図通りに施工すること。','著しい鉄筋の錆・汚染。清掃または交換すること。'],
-  'アンカー':['アンカーボルト位置ずれ。修正または交換すること。','アンカーボルト傾き。修正または交換すること。','アンカーボルト本数不足。設計通り是正すること。','アンカーボルト埋込長さ不足。是正すること。','アンカーボルト突出長さ不足。是正すること。','ホールダウンアンカー位置ずれ。修正すること。','アンカーボルトの錆。清掃または交換すること。','アンカーボルト間隔が設計と異なる。是正すること。'],
-  '基礎':['コンクリートジャンカ発生。適切に補修すること。','ひび割れ（幅0.2mm以上）確認。補修方法を検討し対応すること。','基礎天端レベルの不陸。所定精度内に収めること。','立上り部幅・高さ不足。設計値を確認し是正すること。','スリーブ補強不足。補強筋を追加設置すること。','防湿シート破れ・施工不良。補修または貼り直すこと。','砕石地業締固め不足。十分に転圧し直すこと。','土台水切り取り付け不良。適切に取り付け直すこと。','型枠解体時期が早すぎる。所定養生期間を守ること。','基礎天端モルタルの不陸。是正すること。'],
-  '上棟・パネル完成':['母屋下がり天井上部ねじ打ち不足。横方向に施工すること。','筋交い取り付け不良。設計図通りに取り付け直すこと。','金物締め付け不足。所定トルクで増し締めすること。','柱・梁の傾き許容値超過。垂直・水平を確認し是正すること。','防水テープ貼り付け不良。適切に貼り直すこと。','合板釘打ちピッチ不足。所定間隔で増し打ちすること。','断熱材充填不足・脱落。適切に施工し直すこと。','通気胴縁取り付け不良。適切に取り付け直すこと。','換気口施工不良。設計図通りに是正すること。','パネル接合部の隙間。適切に処理すること。'],
-  '防水':['バルコニー防水層の塗り残し。全面再施工すること。','防水立上り高さ不足（250mm以上確保）。所定高さを確保すること。','ドレン廻り防水処理不良。適切に補修すること。','出隅・入隅補強処理不足。メッシュ補強を追加すること。','シーリング施工不良（打ち残し・気泡等）。打ち直すこと。','笠木廻り防水処理不良。適切に補修すること。','防水重ね幅不足。所定の重ね幅を確保して補修すること。','雨押え取り付け不良。適切に取り付け直すこと。','サッシ廻り防水テープ貼り不良。適切に貼り直すこと。','防水保護モルタルひび割れ。適切に補修すること。'],
-  '断熱':['断熱材の充填不足。所定の厚さに充填すること。','断熱材の脱落。適切に固定し直すこと。','断熱材の隙間・めくれ。適切に処理すること。','気密テープ貼り不良。適切に貼り直すこと。','気密シートの破れ。補修すること。','断熱材の種類・厚さが設計と異なる。是正すること。','床下断熱材の施工不良。適切に施工すること。','屋根断熱の施工不良。設計図通りに施工すること。'],
-  '下地':['下地材の取り付け不良。適切に取り付け直すこと。','下地のビスピッチ不足。所定間隔で増し打ちすること。','下地の不陸。所定精度内に是正すること。','防湿フィルムの施工不良。適切に施工すること。','下地材の腐食・損傷。交換すること。','胴縁取り付け不良。適切に取り付け直すこと。'],
-  '造作完了':['建具建て付け不良（開閉不良）。調整すること。','建具の傷・損傷。補修または交換すること。','造作家具の取り付け不良。確認し適切に取り付けること。','棚板の取り付け不良。是正すること。','階段の施工不良。適切に是正すること。','手すりの取り付け不良。適切に取り付け直すこと。','収納扉の建て付け不良。調整すること。'],
-  '外装':['外壁サイディング取り付け不良（目地不均一・反り）。是正すること。','軒天取り付け不良。適切に取り付け直すこと。','雨樋勾配不良・取り付け不良。是正すること。','外壁コーキング打ち残し・剥離。適切に施工し直すこと。','外壁の破損・欠損。補修または交換すること。','屋根材取り付け不良（ずれ・欠損）。是正すること。','棟板金釘打ち不足・浮き。増し釘し適切に施工すること。','水切り板金取り付け不良。適切に取り付け直すこと。','玄関ドア廻り防水処理不良。適切に補修すること。','基礎化粧モルタルひび割れ・剥離。補修すること。'],
-  '竣工':['クロス浮き・はがれ。適切に貼り直すこと。','クロス目地ずれ・模様の不揃い。貼り直すこと。','床材の傷・凹み・隙間。補修または交換すること。','巾木取り付け不良（浮き・隙間）。適切に取り付け直すこと。','天井クロスたるみ・継ぎ目不良。補修または貼り直すこと。','塗装のムラ・塗り残し。均一に塗り直すこと。','換気扇取り付け・動作確認が必要。適切に施工すること。','窓廻りシーリング打ち残し。適切に施工すること。','設備機器の動作確認が必要。確認し是正すること。','清掃不足。引渡し前に清掃すること。'],
+  '配筋':[
+    'かぶり厚不足（ベース筋下端）\n組直し・結束・サイコロ設置などにより規定寸法を確保の事\nかぶり厚：70（60）mm以上',
+    'かぶり厚不足（ベース筋フック）\n組直し・結束・サイコロ設置などにより規定寸法を確保の事\nかぶり厚：70（60）mm以上',
+    'かぶり厚不足（地中梁）\n組直し・結束・サイコロ設置などにより規定寸法を確保の事\nかぶり厚：70（60）mm以上',
+    'かぶり厚不足（基礎立上り）\n組直し・結束・サイコロ設置などにより規定寸法を確保の事\nかぶり厚：50（40）mm以上',
+    '継ぎ手長さの不足（主筋）\n組直し規定寸法を確保の事\n21N 継ぎ手長さ：520・640・760・880mm\n27N 継ぎ手長さ：455・560・665・770mm',
+    '継ぎ手長さの不足（ベース主筋）\n組直し規定寸法を確保の事\n21N：400mm　27N：350mm',
+    '継ぎ手位置の不適（同一箇所）\n千鳥に組直しの事\n0.5×L1 または 1.5×L1 ずらすこと',
+    '定着長さの不足（基礎立上り主筋）\n組直し規定寸法を確保の事\n21N：455・560・665・770mm\n27N：390・480・570・660mm',
+    '定着筋の設置忘れ（基礎立上り主筋）\n追加設置のこと',
+    '定着筋の設置忘れ（端部定着筋）\n追加設置のこと（布基礎の場合：落とし込み筋でも可）',
+    '鉄筋相互の空き寸法の不足\n組直し規定寸法を確保の事\n空き寸法：25mmかつ粗骨材×1.2かつ鉄筋径×1.5',
+    '結束線不適（結束不足）\n結束不足箇所を結束の事',
+    '結束線不適（異物混入）\n打ち込み前に結束線・異物の除去実施',
+    '結束線不適（折り曲げ不足）\n結束線を内側に折り曲げること',
+    '剥離剤付着（型枠）\nワイヤーブラシ・セメントを用いて除去の事',
+    'スリーブ施工不適（補強筋未施工）\n補強筋を設置する事',
+    'スリーブ施工不適（かぶり厚不足）\n規定寸法30mmを確保の事',
+    'スリーブ施工不適（間距離不足）\nスリーブ間距離：3d以上離すこと',
+    'アンカーボルト施工不適（位置・本数）\n設置位置・本数の確認実施の事',
+    '防湿シートの破損\nテープ等で補修の事',
+    '床付け面の不陸\nレベルが危険側により是正の事',
+    '※指摘事項 当日是正完了'
+  ],
+  'アンカー':[
+    'アンカーボルト施工不適（位置・本数）\n設置位置・本数の確認実施の事',
+    'アンカーボルト施工不適（剥離剤付着）\nワイヤーブラシ・セメントを用いて除去の事',
+    'アンカーボルト不備（施工忘れ）\nケミカルアンカーを専門業者にて施工の事\n※土台アンカーのみ上記。構造用HDは基礎壊しのため注意',
+    'アンカーボルト不備（傾き）\nボルト周りをはつり、緩やかに台直し実施の事',
+    'アンカーボルト不備（ねじ山欠損）\nナットとの関係性を確認し、問題があればケミカルアンカーを専門業者にて施工の事',
+    'アンカーボルト不備（かぶり厚不足）\n構造設計者に安全確認を実施の事\n必要に応じて防水材塗布や基礎一部やり直し',
+    '※指摘事項 当日是正完了'
+  ],
+  '基礎':[
+    '基礎出来形寸法不足（立上り寸法）\n是正の事',
+    '基礎出来形寸法不足（基礎幅寸法）\n構造設計者に安全確認を実施する事',
+    '天端レベラーの浮き\n浮き部分を除去後、プライマー塗布後に再度天端調整を実施の事',
+    '軽微なクラックあり\n浸透性のエポキシ樹脂などにより適切に補修の事',
+    '有害なクラック（貫通クラック）\nクラック幅の進行がないか経過観察を行う事',
+    '有害なクラック（構造クラック疑い）\nクラック幅の進行がないか経過観察を行う事',
+    '耐圧盤に軽微なクラック（押さえ不足）\n浸透性のエポキシ樹脂などにより適切に補修の事',
+    '打ち継ぎ部のジャンカ（軽微）\nポリマーセメントモルタルにて補修実施の事',
+    '打ち継ぎ部のジャンカ（大）\nジャンカを一部はつり出しグラウトにて補修実施の事',
+    '防湿シートの破損\nテープ等で補修の事',
+    '※指摘事項 当日是正完了'
+  ],
+  '上棟・パネル完成':[
+    'ルーフィング施工不適（タッカー過多）\nルーフィング留め付けピッチ：重ね部@300、その他@900程度\nタッカー頭を防水テープなどで止水処理を行う事',
+    'ルーフィング施工不適（隅棟部折り返し不足）\n折り返し寸法：250mm以上を推奨\n日本防水材協会（JWMA）施工要領・保険法人施工要領に従うこと',
+    'ルーフィング施工不適（上下重ね不足）\n上下：100mm以上　左右：200mm以上を確保の事',
+    '捨て防水紙（ルーフィング）未施工\n壁⇔屋根取り合い部に防水紙を差し込み施行すること',
+    'サッシ留め付けビス仕様不適\n必ずメーカー付属のビス（釘）を使用する事',
+    '耐力面材施工不適（釘打ち忘れ・ピッチ不足）\nメーカー壁倍率に準じた施工標準通りの釘ピッチで施行する事',
+    '耐力面材施工不適（釘めり込み過大）\n釘のめり込みは概ね1mm以下\n釘の増し打ち施工をする事',
+    '耐力面材施工不適（縁端距離不足・部材破断）\n縁端部より10mm程度取った位置に釘の増し打ち施工をする事',
+    '耐力面材施工不適（層間隙間）\n上下階層間の耐力面材同士の隙間は6mm以上あけて施工する事',
+    '剛床施工不適（釘打ち忘れ・ピッチ不足）\n水平構面の倍率に準じた施工標準通りの釘ピッチで施行する事',
+    '接合金物施工不適（柱頭未施工）\n設計図書で指定された引張耐力のものを設置施工する事',
+    '接合金物施工不適（柱脚未施工）\n設計図書で指定された引張耐力のものを設置施工する事',
+    '接合金物施工不適（指定金物と相違）\n設計図書で指定された引張耐力のものを設置施工する事',
+    '筋かい施工不適\n筋かい⇔間柱の留め付けはN75×2本打ち\n必要な本数の釘打ち施工をする事',
+    '※指摘事項 当日是正完了'
+  ],
+  '防水':[
+    '防水紙重ね寸法不足（上下）\n規定寸法を確保の事：上下90mm以上',
+    '防水紙重ね寸法不足（左右）\n規定寸法を確保の事：左右150mm以上',
+    '下屋ルーフィング立上り寸法不足\n壁取り合い部の立上り寸法を確保の事：250mm以上',
+    '防水紙の破損\n防水テープ等で補修を実施の事',
+    '下屋と外壁取り合い部・先張りシート未施工\nルーフィングにて先張り施工を実施する事',
+    'サッシ周りの防水紙圧着不足\n防水テープとの圧着が不足しているためローラーなどで再圧着をする事',
+    'サッシ下枠留め付けビス頭の止水処理未施工\nビス頭をコーキング（変成シリコン）又は防水テープにて止水処理をする事',
+    'サッシ下の防水役物施工不適\n使用メーカー施工標準に準じた施工をする事',
+    '貫通部の施工不適（ピンホール）\n追加止水処理を実施する事',
+    '鞍掛シート施工不適（立下げ寸法不足）\n規定寸法を確保の事：立下げ寸法100mm以上（推奨150mm以上）\n500mm幅の鞍掛シートを使用する事',
+    '防水立上り高さ寸法不足\n規定寸法を確保の事\nサッシ下：120mm以上　その他：250mm以上',
+    '三面交差部の施工不適（ピンホール）\n役物使用や防水テープで止水処理を実施する事',
+    '旧仕様適合品\n最新JISA6111（2016）使用を推奨します',
+    '※指摘事項 当日是正完了'
+  ],
+  '断熱':[
+    '天井断熱材欠損（隙間あり）\n断熱材を追加する事',
+    '屋根断熱材欠損（隙間あり）\n断熱材を追加する事',
+    '壁断熱材欠損（隙間あり）\n断熱材を追加する事',
+    '天井断熱材欠損（指定厚み不足）\n敷き込みしなおす事 / 増し吹きすること',
+    '壁断熱材欠損（指定厚み不足）\n敷き込みしなおす事 / 増し吹きすること',
+    '被覆材の施工不備（準耐火建築物）\n被覆材施工・隙間を耐火パテ等で埋める事\n留め具のピッチ規定を是正する事',
+    '防湿シートの破損\nアルミテープなどにて補修する事',
+    '防湿シートの折り返し不足\n規定寸法（30mm）以上の折り返しを確保の事',
+    '断熱材の潰れ（性能発揮不可）\n施工し直しの事',
+    '断熱材の耳出し不適\n再施工し耳出しする事',
+    'ヒートブリッジ対応不適\n外周部のヒートブリッジ箇所に断熱材を増し吹きする事',
+    '屋根断熱の通気経路不備\n通気経路を確保の事',
+    '断熱材の剥離\n増し吹き又は再施工の事',
+    '※指摘事項 当日是正完了'
+  ],
+  '下地':[
+    '外周パネルGS金物施工不適（固定忘れ）\n固定する事',
+    '外周パネルジョイントベニヤ施工不適（ビスピッチ超過）\n規定の間隔（@150mm以内）で留め付けする事',
+    '耐火ボード施工不適（留め具ピッチ超過）\n規定のピッチ以内になるよう留め具の増し打ちをする事',
+    '耐火ボード施工不適（留め具めり込み）\n表面の紙を破っている場合は留め具の増し打ちをする事',
+    '耐火ボード施工不適（割れ・欠け）\n部分的に張替えをする事',
+    '耐火ボード施工不適（取り合い部隙間）\nボードの張替え又は無機質硬化型パテで隙間を埋めること',
+    '建具の据え付け施工不適（傾斜2/1000以上）\n垂直に調整し直して建具枠を取り付ける事',
+    '窓枠の据え付け施工不適（傾斜2/1000以上）\n垂直に調整し直して窓枠を取り付ける事',
+    '※指摘事項 当日是正完了'
+  ],
+  '造作完了':[
+    '外壁サイディング取り付け不良（目地不均一・反り）\n是正すること',
+    '外壁コーキング打ち残し・剥離\n打ち直すこと',
+    '軒天取り付け不良\n適切に取り付け直すこと',
+    '雨樋勾配不良・取り付け不良\n是正すること',
+    '屋根材取り付け不良（ずれ・欠損）\n是正すること',
+    '棟板金釘打ち不足・浮き\n増し釘し適切に施工すること',
+    'サッシ枠にキズ有り\nタッチアップなど適切に補修をする事',
+    '外壁・軒天に汚れ・塗料付着\n清掃して除去する事',
+    '電線・スリーブ・サッシ周りのコーキング不良\nコーキングの増し打ちをする事',
+    '温水・電気設備周りの防水処理不適\n捨てコーキング及び留め付けビス頭の防水処理を実施の事',
+    'タイルに欠け・割れ・浮きあり\nタッチアップ補修又はタイル交換の事',
+    '※指摘事項 当日是正完了'
+  ],
+  '外装':[
+    '外部仕上げ材に汚れ・塗料付着\n清掃して除去する事',
+    '外部仕上げ材にキズ有り\nタッチアップなど適切に補修をする事',
+    '外部仕上げ材（板金部材）に凹凸有り\n補修・交換など適切な措置を講じる事',
+    '屋根仕上げ材に割れ・欠け有り\n交換する事',
+    '電線・スリーブ・貫通部・サッシ周りのコーキング不良\nコーキングの増し打ちをする事',
+    '温水・電気設備周りの防水処理不適\n防水処理がされていないため各コーキング打ちをおこなう事',
+    '竪樋支持具（デンデン）の防水処理不適\n捨てコーキング及び留め付けビス頭の防水処理を実施の事',
+    '屋根の上に汚れ・不要材あり\n清掃・除去する事',
+    '吹付け材の飛散による付着\n清掃して除去する事',
+    '※指摘事項 当日是正完了'
+  ],
+  '竣工':[
+    'クロス浮き・はがれ\n適切に貼り直すこと',
+    '床材の傷・凹み・隙間\n補修または交換すること',
+    '巾木取り付け不良（浮き・隙間）\n適切に取り付け直すこと',
+    '建具建て付け不良（開閉不良）\n調整すること',
+    '塗装のムラ・塗り残し\n均一に塗り直すこと',
+    '換気扇取り付け・動作確認\n適切に施工すること',
+    '設備機器の動作確認が必要\n確認し是正すること',
+    '清掃不足\n引渡し前に清掃すること',
+    '※指摘事項 当日是正完了'
+  ],
   'その他':[]
 };
 // バージョン管理（担当者名・テンプレートの強制更新）
-const APP_VERSION = '2.0';
+const APP_VERSION = '3.0';
 if(ls('insp_version') !== APP_VERSION){
   localStorage.removeItem('insp_tmpl');
   localStorage.removeItem('insp_names');
@@ -948,12 +1081,12 @@ function applyPhotos(){
 }
 
 // セル配置順：タップしたセルから上書きで順番に埋める
-// 全8セル: [L0,R0,L1,R1,L2,R2,L3,R3]
+// 全8セル: [L0,R0,L1,R1,L2,R2,L3,R3]、溢れたら自動でシートを追加
 function placePhotos(srcs){
   const {rid, side, idx} = _photoCtx;
-  const row = getRow(rid); if(!row) return;
+  let row = getRow(rid); if(!row) return;
 
-  // フラット配列（左右交互）
+  // フラット配列（左右交互）全8スロット
   const flat = [];
   for(let i=0;i<4;i++){
     flat.push({side:'left',  idx:i});
@@ -963,13 +1096,40 @@ function placePhotos(srcs){
   // タップしたセルの位置
   const startFlat = idx * 2 + (side==='right' ? 1 : 0);
 
-  // startFlatから順番に上書きで配置（空き関係なく順番通り）
   srcs.forEach((src, i) => {
-    const pos = (startFlat + i) % 8;
-    const target = flat[pos];
-    if(target.side === 'left') row.LP[target.idx] = src;
-    else                        row.RP[target.idx] = src;
+    const pos = startFlat + i;
+    if(pos < 8){
+      // 現在のシートに配置
+      const target = flat[pos];
+      if(target.side === 'left') row.LP[target.idx] = src;
+      else                        row.RP[target.idx] = src;
+    } else {
+      // 8枚を超えたら新しいシートを自動追加して左①から配置
+      const rowIdx = session.rows.indexOf(row);
+      const nextRowIdx = rowIdx + 1;
+      // 次のシートが存在しなければ追加
+      if(nextRowIdx >= session.rows.length){
+        session.rows.push(newRow());
+      }
+      row = session.rows[nextRowIdx];
+      const overPos = pos - 8;
+      const target = flat[overPos % 8];
+      if(target.side === 'left') row.LP[target.idx] = src;
+      else                        row.RP[target.idx] = src;
+      // 次のシートが溢れた場合さらに追加（再帰的に対応）
+      if(overPos >= 8){
+        // ここでは最大2シート追加まで対応（実用上十分）
+        if(rowIdx + 2 >= session.rows.length) session.rows.push(newRow());
+        const row2 = session.rows[rowIdx + 2];
+        const target2 = flat[(pos - 16) % 8];
+        if(target2.side === 'left') row2.LP[target2.idx] = src;
+        else                         row2.RP[target2.idx] = src;
+      }
+    }
   });
+  if(srcs.length > 8 - startFlat){
+    showToast('📋 写真が多いため自動でシートを追加しました', 'ok');
+  }
   renderSheet();
 }
 
@@ -1131,7 +1291,6 @@ async function generateExcel(){
   showToast('📊 Excel生成中…','warn');
 
   try {
-    // exceljsロード（未ロードの場合）
     if(typeof ExcelJS === 'undefined'){
       await loadScript('./exceljs.min.js');
     }
@@ -1140,11 +1299,13 @@ async function generateExcel(){
     wb.creator = '現場検査記録アプリ';
     wb.created = new Date();
 
-    const COL_W = 36;       // 列幅（文字単位）
-    const ROW_H_HDR = 25;   // ヘッダー行高さ（pt）
-    const ROW_H_SUB = 18;
-    const ROW_H_PHOTO = 160; // 写真行高さ（pt）
-    const PHOTO_ROWS = 4;
+    // レイアウト定数
+    const COL_W       = 38;   // 列幅（文字単位）≒約13.5cm
+    const ROW_H_HDR   = 28;   // ヘッダー行高さ（pt）
+    const ROW_H_SUB   = 20;
+    const ROW_H_PHOTO = 190;  // 写真行高さ（pt）★拡大
+    const PHOTO_ROWS  = 4;
+    const TOTAL_ROWS  = PHOTO_ROWS + 2; // ヘッダー2行 + 写真4行
 
     const inspStr = [session.insp1, session.insp2].filter(Boolean).join(' / ');
     const dateStr = formatDateJP(session.date);
@@ -1155,8 +1316,25 @@ async function generateExcel(){
       const row = session.rows[idx];
       const ws = wb.addWorksheet('No' + (idx + 1));
 
+      // 列幅設定
       ws.getColumn(1).width = COL_W;
       ws.getColumn(2).width = COL_W;
+
+      // ── 印刷設定（余白最小・A4縦・2列に収める）──
+      ws.pageSetup = {
+        paperSize: 9,          // A4
+        orientation: 'portrait',
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        printArea: 'A1:B' + TOTAL_ROWS,
+        showGridLines: false
+      };
+      ws.pageMargins = {
+        left: 0.25,   right:  0.25,
+        top:  0.25,   bottom: 0.25,
+        header: 0.1,  footer: 0.1
+      };
 
       // ── 行1：ヘッダー ──
       ws.getRow(1).height = ROW_H_HDR;
@@ -1164,20 +1342,26 @@ async function generateExcel(){
       const hCell = ws.getCell('A1');
       hCell.value = ownerStr + ' 様邸　' + dateStr + '　' + typeStr + '　担当：' + inspStr;
       hCell.fill   = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1b3a6b'} };
-      hCell.font   = { color:{argb:'FFFFFFFF'}, bold:true, size:10, name:'メイリオ' };
+      hCell.font   = { color:{argb:'FFFFFFFF'}, bold:true, size:11, name:'メイリオ' };
       hCell.alignment = { horizontal:'left', vertical:'middle' };
+      hCell.border = {
+        top:{style:'medium',color:{argb:'FF1b3a6b'}},
+        bottom:{style:'medium',color:{argb:'FF1b3a6b'}},
+        left:{style:'medium',color:{argb:'FF1b3a6b'}},
+        right:{style:'medium',color:{argb:'FF1b3a6b'}}
+      };
 
       // ── 行2：サブヘッダー ──
       ws.getRow(2).height = ROW_H_SUB;
       const s2L = ws.getCell('A2');
       s2L.value = '指摘事項 No.' + (idx + 1);
       s2L.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFe6edf8'} };
-      s2L.font  = { bold:true, size:9, color:{argb:'FF1b3a6b'}, name:'メイリオ' };
+      s2L.font  = { bold:true, size:10, color:{argb:'FF1b3a6b'}, name:'メイリオ' };
       s2L.alignment = { horizontal:'left', vertical:'middle' };
       const s2R = ws.getCell('B2');
       s2R.value = '↓↓是正写真はこの面に貼付けて提出してください。';
       s2R.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFe6f4f0'} };
-      s2R.font  = { bold:true, size:9, color:{argb:'FF0a7c5c'}, name:'メイリオ' };
+      s2R.font  = { bold:true, size:10, color:{argb:'FF0a7c5c'}, name:'メイリオ' };
       s2R.alignment = { horizontal:'left', vertical:'middle' };
 
       // ── 行3〜6：写真行 ──
@@ -1194,11 +1378,11 @@ async function generateExcel(){
           try {
             const imgId = addImageToWorkbook(wb, lPhoto);
             ws.addImage(imgId, {
-              tl: { col: 0, row: rowNum - 1 },
-              br: { col: 1, row: rowNum },
+              tl: { col: 0, row: rowNum - 1, nativeRowOff: 50000 },
+              br: { col: 1, row: rowNum,     nativeRowOff: -50000 },
               editAs: 'oneCell'
             });
-          } catch(imgErr){ lCell.value = '（写真エラー）'; }
+          } catch(e){ lCell.value = '（写真エラー）'; }
         }
 
         // 右セル（是正写真欄 or テキスト）
@@ -1210,51 +1394,49 @@ async function generateExcel(){
           try {
             const imgId2 = addImageToWorkbook(wb, rPhoto);
             ws.addImage(imgId2, {
-              tl: { col: 1, row: rowNum - 1 },
-              br: { col: 2, row: rowNum },
+              tl: { col: 1, row: rowNum - 1, nativeRowOff: 50000 },
+              br: { col: 2, row: rowNum,     nativeRowOff: -50000 },
               editAs: 'oneCell'
             });
-          } catch(imgErr){ rCell.value = '（写真エラー）'; }
+          } catch(e){ rCell.value = '（写真エラー）'; }
         } else if(rText){
-          rCell.value = rText;
-          rCell.font  = { size:10, name:'メイリオ' };
-          rCell.alignment = { wrapText:true, horizontal:'left', vertical:'top' };
+          // ─ テキスト整形：全文字表示・バランス改行 ─
+          rCell.value   = formatCellText(rText);
+          rCell.font    = { size: 10, name:'メイリオ' };
+          rCell.alignment = { wrapText:true, horizontal:'left', vertical:'top',
+                              indent: 1 };
         }
 
         // セル罫線
-        const borderStyle = { style:'thin', color:{argb:'FF8a90a8'} };
-        [lCell, rCell].forEach(c => {
-          c.border = {
-            top:borderStyle, bottom:borderStyle,
-            left:borderStyle, right:borderStyle
-          };
-        });
+        const thin = { style:'thin', color:{argb:'FF8a90a8'} };
+        lCell.border = { top:thin, bottom:thin, left:thin, right:thin };
+        rCell.border = { top:thin, bottom:thin, left:thin, right:thin };
       }
 
       // 外枠太罫線
-      const outerStyle = { style:'medium', color:{argb:'FF1b3a6b'} };
-      for(let r = 1; r <= 6; r++){
+      const med = { style:'medium', color:{argb:'FF1b3a6b'} };
+      for(let r = 1; r <= TOTAL_ROWS; r++){
         const cL = ws.getCell(r, 1);
         const cR = ws.getCell(r, 2);
+        cL.border = Object.assign({}, cL.border||{}, { left:med });
+        cR.border = Object.assign({}, cR.border||{}, { right:med });
         if(r === 1){
-          cL.border = Object.assign({}, cL.border||{}, {top:outerStyle, left:outerStyle});
-          cR.border = Object.assign({}, cR.border||{}, {top:outerStyle, right:outerStyle});
+          cL.border = Object.assign({}, cL.border, { top:med });
+          cR.border = Object.assign({}, cR.border, { top:med });
         }
-        if(r === 6){
-          cL.border = Object.assign({}, cL.border||{}, {bottom:outerStyle, left:outerStyle});
-          cR.border = Object.assign({}, cR.border||{}, {bottom:outerStyle, right:outerStyle});
+        if(r === TOTAL_ROWS){
+          cL.border = Object.assign({}, cL.border, { bottom:med });
+          cR.border = Object.assign({}, cR.border, { bottom:med });
         }
-        cL.border = Object.assign({}, cL.border||{}, {left:outerStyle});
-        cR.border = Object.assign({}, cR.border||{}, {right:outerStyle});
       }
     }
 
-    // xlsxをblobとしてDL
-    const buf = await wb.xlsx.writeBuffer();
+    // xlsx をblobとしてDL
+    const buf  = await wb.xlsx.writeBuffer();
     const blob = new Blob([buf], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
-    const d = (session.date||'').replace(/-/g,'');
+    const d     = (session.date||'').replace(/-/g,'');
     const fname = d + '_' + ownerStr + '様_' + typeStr + '_検査記録.xlsx';
     downloadBlob(blob, fname);
 
@@ -1269,17 +1451,23 @@ async function generateExcel(){
   }
 }
 
+// テキスト整形：改行コードを正規化し、全文字が表示されるよう調整
+function formatCellText(text){
+  if(!text) return '';
+  // \n を実際の改行に変換
+  return text.replace(/\\n/g, '\n').replace(/\n/g, '\n');
+}
+
 function addImageToWorkbook(wb, dataUrl){
   const parts = dataUrl.split(',');
   const mime  = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
   const ext   = mime === 'image/png' ? 'png' : 'jpeg';
-  const b64   = parts[1];
-  return wb.addImage({ base64: b64, extension: ext });
+  return wb.addImage({ base64: parts[1], extension: ext });
 }
 
 function downloadBlob(blob, filename){
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a   = document.createElement('a');
   a.href = url; a.download = filename;
   document.body.appendChild(a);
   a.click();
