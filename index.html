@@ -1517,12 +1517,17 @@ async function generateExcel(){
 
       // ── 行3〜6：写真行 ──
       // パターンA：縦横比固定・セル内最大フィット・中央配置
-      // 正確なpx換算:
-      //   列幅: width * MDW + 5 (MDW=7px, メイリオ11pt@96dpi)
-      //   行高: height(pt) * 96/72 (96dpiスクリーン換算)
-      const CELL_W_PX = Math.floor(COL_W * 7 + 5);   // 44*7+5=313px
-      const CELL_H_PX = Math.floor(ROW_H_PHOTO * 96 / 72); // 210*96/72=280px
-      const PAD_PX    = 3;              // 内側余白px
+      // exceljsのnativeColOff/nativeRowOffの単位:
+      //   nativeColOff: (オフセットpx/セル幅px) * (col.width * 10000)
+      //   nativeRowOff: (オフセットpx/セル高px) * (row.height * 10000)
+      // ext.width/height: スクリーンpx単位（内部で*9525してEMUに変換される）
+      // セルpx: 列幅→Microsoft公式, 行高→pt*96/72
+      const MDW        = 7;   // メイリオ11pt@96dpiの最大数字幅
+      const CELL_W_PX  = Math.floor(((256*COL_W + Math.floor(128/MDW))/256)*MDW); // 308px
+      const CELL_H_PX  = Math.floor(ROW_H_PHOTO * 96 / 72);  // 280px
+      const COL_UNIT   = Math.floor(COL_W * 10000);           // 440000
+      const ROW_UNIT   = Math.floor(ROW_H_PHOTO * 10000);     // 2100000
+      const PAD_PX     = 4;  // 内側余白px
 
       for(let pi = 0; pi < PHOTO_ROWS; pi++){
         const rowNum = pi + 3;
@@ -1542,12 +1547,12 @@ async function generateExcel(){
             const scale = Math.min(avW / nat.w, avH / nat.h);
             const imgW  = Math.round(nat.w * scale);
             const imgH  = Math.round(nat.h * scale);
-            const offX  = PAD_PX + Math.floor((avW - imgW) / 2); // px
-            const offY  = PAD_PX + Math.floor((avH - imgH) / 2); // px
+            const offX  = PAD_PX + Math.floor((avW - imgW) / 2);
+            const offY  = PAD_PX + Math.floor((avH - imgH) / 2);
             ws.addImage(imgId, {
               tl:  { col: 0, row: rowNum - 1,
-                     nativeColOff: offX * 9525,
-                     nativeRowOff: offY * 9525 },
+                     nativeColOff: Math.floor(offX / CELL_W_PX * COL_UNIT),
+                     nativeRowOff: Math.floor(offY / CELL_H_PX * ROW_UNIT) },
               ext: { width: imgW, height: imgH }
             });
           } catch(e){ lCell.value = '（写真エラー）'; }
@@ -1571,8 +1576,8 @@ async function generateExcel(){
             const offY2  = PAD_PX + Math.floor((avH2 - imgH2) / 2);
             ws.addImage(imgId2, {
               tl:  { col: 1, row: rowNum - 1,
-                     nativeColOff: offX2 * 9525,
-                     nativeRowOff: offY2 * 9525 },
+                     nativeColOff: Math.floor(offX2 / CELL_W_PX * COL_UNIT),
+                     nativeRowOff: Math.floor(offY2 / CELL_H_PX * ROW_UNIT) },
               ext: { width: imgW2, height: imgH2 }
             });
           } catch(e){ rCell.value = '（写真エラー）'; }
