@@ -463,8 +463,99 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 <script>
 'use strict';
 
+// ─── IndexedDB設定 ───────────────────────────────────
+const DB_NAME    = 'shitekiApp';
+const DB_VERSION = 1;
+const STORE_NAME = 'archives';
+const MAX_ARC    = 3; // 最大保存件数
+
+let _db = null;
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    if(_db){ resolve(_db); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE_NAME)){
+        const store = db.createObjectStore(STORE_NAME, { keyPath:'id' });
+        store.createIndex('savedAt', 'savedAt', { unique:false });
+      }
+    };
+    req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+// 全件取得（savedAt降順）
+async function dbGetAll(){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req   = store.getAll();
+    req.onsuccess = e => {
+      const all = e.target.result || [];
+      all.sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''));
+      resolve(all);
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+// 1件保存（上書き or 追加）・最大3件制限
+async function dbSave(record){
+  const db  = await openDB();
+  const all = await dbGetAll();
+  // 同IDが存在しない かつ 3件以上なら最古を削除
+  const exists = all.find(a => a.id === record.id);
+  if(!exists && all.length >= MAX_ARC){
+    // 最も古いものを削除
+    const oldest = all[all.length - 1];
+    await dbDelete(oldest.id);
+  }
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req   = store.put(record);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+// 1件削除
+async function dbDelete(id){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req   = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+// LocalStorageからIndexedDBへの初回移行
+async function migrateFromLocalStorage(){
+  try {
+    const old = localStorage.getItem('insp_arc');
+    if(!old) return;
+    const oldData = JSON.parse(old);
+    if(!oldData || !oldData.length) return;
+    // 既存データをIndexedDBに移行（最大3件）
+    const toMigrate = oldData.slice(-MAX_ARC);
+    for(const rec of toMigrate){
+      await dbSave(rec);
+    }
+    localStorage.removeItem('insp_arc');
+    console.log('LocalStorage→IndexedDB移行完了:', toMigrate.length, '件');
+  } catch(e){
+    console.warn('移行エラー:', e);
+  }
+}
+
 // ─── STATE ──────────────────────────────────────────
-let archives  = JSON.parse(ls('insp_arc')  || '[]');
+let archives  = []; // IndexedDBから非同期ロード
 let templates = JSON.parse(ls('insp_tmpl') || 'null');
 let inspNames = JSON.parse(ls('insp_names')|| 'null');
 let session   = null;
@@ -651,7 +742,7 @@ function init() {
 }
 function ls(k){ return localStorage.getItem(k); }
 function today(){ return new Date().toISOString().slice(0,10); }
-function saveArc(){ localStorage.setItem('insp_arc', JSON.stringify(archives)); }
+function saveArc(){ /* IndexedDBに移行済み - 互換性のため残す */ }
 function saveTmpl(){ localStorage.setItem('insp_tmpl', JSON.stringify(templates)); }
 function saveNames(){ localStorage.setItem('insp_names', JSON.stringify(inspNames)); }
 function getRow(rid){ return session && session.rows.find(r => r.id === rid); }
@@ -751,7 +842,7 @@ function showBot(ctx){
   if(ctx==='setup')
     b.innerHTML=`<button class="bbtn sec" data-action="back">← 戻る</button><button class="bbtn pri" data-action="start">✅ この設定で開始</button>`;
   else if(ctx==='sheet')
-    b.innerHTML=`<button class="bbtn sec" data-action="save">💾 保存</button><button class="bbtn grn" data-action="excel">📊 Excel</button><button class="bbtn org" data-action="pdf">📄 PDF</button>`;
+    b.innerHTML=`<button class="bbtn sec" data-action="save">💾 一時保存</button><button class="bbtn grn" data-action="excel">📊 Excel</button><button class="bbtn org" data-action="pdf">📄 PDF</button>`;
   else b.innerHTML='';
 }
 
@@ -761,22 +852,45 @@ function toggleArc(){
   s.style.display = s.style.display==='none' ? 'block' : 'none';
   renderArcList();
 }
-function renderArcList(){
+async function renderArcList(){
   const el = document.getElementById('arc-list');
-  if(!archives.length){ el.innerHTML='<div class="arc-empty">保存済みの物件はありません</div>'; return; }
+  el.innerHTML = '<div class="arc-empty">読み込み中…</div>';
+  try {
+    archives = await dbGetAll();
+  } catch(e){ archives = []; }
+  if(!archives.length){
+    el.innerHTML='<div class="arc-empty">保存済みの物件はありません</div>';
+    return;
+  }
   el.innerHTML='';
-  archives.slice().reverse().forEach(a=>{
+  archives.forEach(a=>{
     const d=document.createElement('div'); d.className='arc-item';
     const info=document.createElement('div'); info.className='arc-info';
-    info.innerHTML=`<div class="arc-name">${xe(a.owner||'（物件名なし）')}</div><div class="arc-meta">${xe(a.type)} · ${xe(a.date)} · ${a.rows.length}シート</div>`;
+    const dateStr = a.date ? a.date.replace(/-/g,'/') : '';
+    info.innerHTML=`<div class="arc-name">${xe(a.owner||'（物件名なし）')}</div><div class="arc-meta">${xe(a.type)} · ${dateStr} · ${a.rows?a.rows.length:0}シート · 最大${MAX_ARC}件保存</div>`;
     info.addEventListener('click',()=> loadArc(a.id));
     const del=document.createElement('button'); del.className='arc-del'; del.textContent='🗑';
     del.addEventListener('click',e=>{ e.stopPropagation(); delArc(a.id); });
     d.appendChild(info); d.appendChild(del); el.appendChild(d);
   });
 }
-function loadArc(id){ const a=archives.find(x=>x.id===id); if(!a) return; session=JSON.parse(JSON.stringify(a)); renderSheet(); goTab('sheet'); }
-function delArc(id){ if(!confirm('削除しますか？')) return; archives=archives.filter(a=>a.id!==id); saveArc(); renderArcList(); showToast('🗑 削除しました'); }
+function loadArc(id){
+  const a = archives.find(x=>x.id===id);
+  if(!a) return;
+  session = JSON.parse(JSON.stringify(a));
+  renderSheet(); goTab('sheet');
+}
+async function delArc(id){
+  if(!confirm('削除しますか？')) return;
+  try {
+    await dbDelete(id);
+    archives = await dbGetAll();
+    renderArcList();
+    showToast('🗑 削除しました');
+  } catch(e){
+    showToast('❌ 削除に失敗しました');
+  }
+}
 
 // ─── SETUP ──────────────────────────────────────────
 function buildSetupChips(){
@@ -1282,17 +1396,23 @@ function delTmpl(type,i){
 }
 
 // ─── ARCHIVE ─────────────────────────────────────────
-function saveToArc(){
+async function saveToArc(){
   if(!session) return;
-  session.savedAt=new Date().toISOString();
-  const snap=JSON.parse(JSON.stringify(session));
-  const idx=archives.findIndex(a=>a.id===session.id);
-  if(idx>=0) archives[idx]=snap; else archives.push(snap);
-  saveArc(); showToast('💾 保存しました','ok');
+  session.savedAt = new Date().toISOString();
+  const snap = JSON.parse(JSON.stringify(session));
+  try {
+    await dbSave(snap);
+    // メモリ上のarchivesも更新
+    archives = await dbGetAll();
+    showToast('💾 保存しました','ok');
+  } catch(e){
+    console.error('保存エラー:', e);
+    showToast('❌ 保存に失敗しました');
+  }
 }
 
 // ─── PDF印刷（ブラウザ印刷機能） ──────────────────────
-function printAsPdf(){
+async function printAsPdf(){
   if(!session||!session.rows.length){ showToast('⚠️ データがありません'); return; }
 
   // ファイル名を提案（ブラウザのデフォルトタイトルを変更）
@@ -1492,7 +1612,7 @@ async function generateExcel(){
     });
     const d     = (session.date||'').replace(/-/g,'');
     const fname = d + '_' + ownerStr + '様_' + typeStr + '_検査記録.xlsx';
-    saveToArc();
+    await saveToArc();
     await shareOrDownloadBlob(blob, fname);
 
   } catch(err){
