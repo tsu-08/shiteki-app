@@ -1419,7 +1419,7 @@ async function printAsPdf(){
   const d = (session.date||'').replace(/-/g,'');
   const owner = session.owner||'物件';
   const type = session.type||'';
-  const suggestedName = `${d}_${owner}様_${type}_検査記録`;
+  const suggestedName = `【是正完了】${d}_${owner}_指摘写真_${type}`;
   const originalTitle = document.title;
   document.title = suggestedName;
 
@@ -1621,7 +1621,7 @@ async function generateExcel(){
       type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
     const d     = (session.date||'').replace(/-/g,'');
-    const fname = d + '_' + ownerStr + '様_' + typeStr + '_検査記録.xlsx';
+    const fname = d + '_' + ownerStr + '_指摘写真_' + typeStr + '.xlsx';
     await saveToArc();
     await shareOrDownloadBlob(blob, fname);
 
