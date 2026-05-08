@@ -791,7 +791,7 @@ function bindAll(){
   // Right text modal
   document.getElementById('rtxt-cancel').addEventListener('click', ()=> closeOv('ov-rtxt'));
   document.getElementById('rtxt-ok').addEventListener('click', applyRtxt);
-  document.getElementById('rtxt-ok-top').addEventListener('click', applyRtxt);
+  const okTop = document.getElementById('rtxt-ok-top'); if(okTop) okTop.addEventListener('click', applyRtxt);
   document.getElementById('ov-rtxt').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeOv('ov-rtxt'); });
 
   // Bottom bar (delegated)
