@@ -820,9 +820,36 @@ function bindAll(){
     if(!btn) return;
     const {act,rid,side,idx} = btn.dataset;
     const i = parseInt(idx);
+    // 移動モード中の処理
+    if(_moveCtx && (act==='open-src'||act==='open-right')){
+      const dstRow=getRow(rid); if(!dstRow) return;
+      const dstSide=side||'right', dstIdx=i;
+      const srcRow=getRow(_moveCtx.rid);
+      const dstSrc=dstSide==='left'?dstRow.LP[dstIdx]:dstRow.RP[dstIdx];
+      if(dstSide==='left') dstRow.LP[dstIdx]=_moveCtx.src;
+      else dstRow.RP[dstIdx]=_moveCtx.src;
+      if(srcRow){
+        if(_moveCtx.side==='left') srcRow.LP[_moveCtx.idx]=dstSrc||null;
+        else srcRow.RP[_moveCtx.idx]=dstSrc||null;
+      }
+      _moveCtx=null;
+      showToast(dstSrc?'✅ 写真を入れ替えました':'✅ 写真を移動しました','ok');
+      renderSheet(); return;
+    }
+    if(act==='mv-photo'){
+      const srcRow=getRow(rid); if(!srcRow) return;
+      const src=side==='left'?srcRow.LP[i]:srcRow.RP[i];
+      if(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side===side&&_moveCtx.idx===i){
+        _moveCtx=null;
+      } else {
+        _moveCtx={rid,side:side,idx:i,src};
+        showToast('✂️ 移動先のセルをタップしてください','warn');
+      }
+      renderSheet(); return;
+    }
     if(act==='open-src')    openSrc(rid, side, i);
     else if(act==='open-right') openRight(rid, i);
-    else if(act==='rm-photo')   removePhoto(rid, side, i);
+    else if(act==='rm-photo'){ removePhoto(rid, side, i); _moveCtx=null; }
     else if(act==='rm-rtxt')    clearRtxt(rid, i);
     else if(act==='del-row')    delRow(rid);
   });
@@ -1049,7 +1076,11 @@ function buildLeftCell(rid, idx, src){
     const lbl=document.createElement('div'); lbl.className='pcell-lbl'; lbl.textContent='指摘';
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-photo'; rm.dataset.rid=rid; rm.dataset.side='left'; rm.dataset.idx=idx;
-    cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm);
+    const mv=document.createElement('button');
+    mv.className='pcell-mv'+(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx?' active':'');
+    mv.textContent=(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx)?'📍':'✂️';
+    mv.dataset.act='mv-photo'; mv.dataset.rid=rid; mv.dataset.side='left'; mv.dataset.idx=idx;
+    cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm); cell.appendChild(mv);
   } else {
     const ico=document.createElement('div'); ico.className='pcell-empty-ico'; ico.textContent='📷';
     const txt=document.createElement('div'); txt.className='pcell-empty-txt'; txt.textContent='タップで写真追加';
@@ -1067,7 +1098,11 @@ function buildRightCell(rid, idx, src, rtxt){
     const lbl=document.createElement('div'); lbl.className='pcell-lbl green'; lbl.textContent='是正完了';
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-photo'; rm.dataset.rid=rid; rm.dataset.side='right'; rm.dataset.idx=idx;
-    cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm);
+    const mv2=document.createElement('button');
+    mv2.className='pcell-mv'+(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='right'&&_moveCtx.idx===idx?' active':'');
+    mv2.textContent=(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='right'&&_moveCtx.idx===idx)?'📍':'✂️';
+    mv2.dataset.act='mv-photo'; mv2.dataset.rid=rid; mv2.dataset.side='right'; mv2.dataset.idx=idx;
+    cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm); cell.appendChild(mv2);
     return cell;
   }
   if(rtxt){
