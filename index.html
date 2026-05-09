@@ -133,6 +133,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .pcell-lbl{position:absolute;bottom:0;left:0;right:0;background:rgba(27,58,107,.75);
   color:#fff;font-size:9px;font-weight:700;text-align:center;padding:2px;z-index:1}
 .pcell-lbl.green{background:rgba(10,124,92,.8)}
+.pcell-mv{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
+  background:rgba(27,58,107,.75);border:none;color:#fff;font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;z-index:3;padding:0;line-height:1}
+.pcell-mv.active{background:#0a7c5c !important}
 .pcell-rm{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;
   background:rgba(0,0,0,.6);border:none;color:#fff;font-size:12px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;z-index:2}
@@ -258,7 +262,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   html,body{max-width:100% !important;width:100% !important;background:#fff !important;padding:0 !important;margin:0 !important;}
   .topbar,.tabs,.botbar,.srow-foot,.add-sheet-btn,
   .ov,.wizard-ov,.toast,#pnl-home,#pnl-setup,#pnl-tmpl,
-  .ph-remove,.pcell-rm{display:none !important;}
+  .ph-remove,.pcell-rm,.pcell-mv{display:none !important;}
   .pnl{display:block !important;padding:0 !important;}
   #pnl-sheet{display:block !important;}
   .sheet-wrap{padding:0 !important;margin:0 !important;}
@@ -1720,12 +1724,19 @@ async function convertToXlsm(xlsxUint8) {
   }
 
   // drawing.xmlのfillRectを削除（引き伸ばし無効）
-  // VBAのScaleWidthで元サイズに戻すため不要だが念のため
   const drawFile = zip.file('xl/drawings/drawing1.xml');
   if(drawFile){
     const drawXml = await drawFile.async('string');
     zip.file('xl/drawings/drawing1.xml',
       drawXml.replace(/<a:stretch><a:fillRect\/><\/a:stretch>/g, '<a:stretch/>'));
+  }
+
+  // sheetのdyDescentを0.25→0.2に変更（Excel行高さ表示を正しくする）
+  // これによりht="180"がExcelで正しく180ptと表示される
+  const sheetNames = Object.keys(zip.files).filter(n => n.match(/xl\/worksheets\/sheet\d+\.xml/));
+  for(const sn of sheetNames){
+    const sXml = await zip.file(sn).async('string');
+    zip.file(sn, sXml.replace(/dyDescent="0\.25"/g, 'dyDescent="0.2"'));
   }
 
   return zip.generateAsync({
