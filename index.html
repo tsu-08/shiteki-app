@@ -133,6 +133,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .pcell-lbl{position:absolute;bottom:0;left:0;right:0;background:rgba(27,58,107,.75);
   color:#fff;font-size:9px;font-weight:700;text-align:center;padding:2px;z-index:1}
 .pcell-lbl.green{background:rgba(10,124,92,.8)}
+.move-selected{outline:3px solid #0a7c5c !important;outline-offset:-3px !important;}
 .pcell-mv{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
   background:rgba(27,58,107,.75);border:none;color:#fff;font-size:12px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;z-index:3;padding:0;line-height:1}
@@ -826,34 +827,60 @@ function bindAll(){
     const {act,rid,side,idx} = btn.dataset;
     const i = parseInt(idx);
     // 移動モード中の処理
-    if(_moveCtx && (act==='open-src'||act==='open-right')){
-      const dstRow=getRow(rid); if(!dstRow) return;
-      const dstSide=side||'right', dstIdx=i;
-      const srcRow=getRow(_moveCtx.rid);
-      const dstSrc=dstSide==='left'?dstRow.LP[dstIdx]:dstRow.RP[dstIdx];
-      if(dstSide==='left') dstRow.LP[dstIdx]=_moveCtx.src;
-      else dstRow.RP[dstIdx]=_moveCtx.src;
-      if(srcRow){
-        if(_moveCtx.side==='left') srcRow.LP[_moveCtx.idx]=dstSrc||null;
-        else srcRow.RP[_moveCtx.idx]=dstSrc||null;
-      }
-      _moveCtx=null;
-      showToast(dstSrc?'✅ 写真を入れ替えました':'✅ 写真を移動しました','ok');
-      renderSheet(); return;
-    }
-    if(act==='mv-photo'){
-      const srcRow=getRow(rid); if(!srcRow) return;
-      const src=side==='left'?srcRow.LP[i]:srcRow.RP[i];
-      if(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side===side&&_moveCtx.idx===i){
+    // 写真タップ：移動モードの開始・確定
+    if(act==='open-src' || act==='open-right'){
+      const row=getRow(rid); if(!row) return;
+      const src=side==='left'?row.LP[i]:row.RP[i];
+      if(_moveCtx){
+        // 移動先確定
+        if(_moveCtx.rid===rid&&_moveCtx.side===side&&_moveCtx.idx===i){
+          // 同じセルをタップ→キャンセル
+          _moveCtx=null; renderSheet(); return;
+        }
+        const dstRow=getRow(rid);
+        const srcRow=getRow(_moveCtx.rid);
+        const dstSrc=side==='left'?dstRow.LP[i]:dstRow.RP[i];
+        if(side==='left') dstRow.LP[i]=_moveCtx.src;
+        else dstRow.RP[i]=_moveCtx.src;
+        if(srcRow){
+          if(_moveCtx.side==='left') srcRow.LP[_moveCtx.idx]=dstSrc||null;
+          else srcRow.RP[_moveCtx.idx]=dstSrc||null;
+        }
         _moveCtx=null;
-      } else {
-        _moveCtx={rid,side:side,idx:i,src};
-        showToast('✂️ 移動先のセルをタップしてください','warn');
+        showToast(dstSrc?'✅ 写真を入れ替えました':'✅ 写真を移動しました','ok');
+        renderSheet(); return;
       }
-      renderSheet(); return;
+      if(src){
+        // 写真ありセルをタップ→移動モード開始
+        _moveCtx={rid,side,idx:i,src};
+        showToast('📍 移動先の写真セルをタップしてください（同じセルでキャンセル）','warn');
+        renderSheet(); return;
+      }
     }
-    if(act==='open-src')    openSrc(rid, side, i);
-    else if(act==='open-right') openRight(rid, i);
+    if(act==='open-src'){
+      if(_moveCtx){ // 移動モード中→移動先として処理
+        const dstRow=getRow(rid); if(dstRow){
+          const dstSrc=side==='left'?dstRow.LP[i]:dstRow.RP[i];
+          if(side==='left') dstRow.LP[i]=_moveCtx.src; else dstRow.RP[i]=_moveCtx.src;
+          const srcRow=getRow(_moveCtx.rid);
+          if(srcRow){ if(_moveCtx.side==='left') srcRow.LP[_moveCtx.idx]=dstSrc||null; else srcRow.RP[_moveCtx.idx]=dstSrc||null; }
+          showToast(dstSrc?'✅ 写真を入れ替えました':'✅ 写真を移動しました','ok');
+          _moveCtx=null; renderSheet();
+        }
+      } else openSrc(rid, side, i);
+    }
+    else if(act==='open-right'){
+      if(_moveCtx){ // 移動モード中→右セルへ移動（コメント保持）
+        const dstRow=getRow(rid); if(dstRow){
+          const dstSrc=dstRow.RP[i];
+          dstRow.RP[i]=_moveCtx.src;
+          const srcRow=getRow(_moveCtx.rid);
+          if(srcRow){ if(_moveCtx.side==='left') srcRow.LP[_moveCtx.idx]=dstSrc||null; else srcRow.RP[_moveCtx.idx]=dstSrc||null; }
+          showToast(dstSrc?'✅ 写真を入れ替えました':'✅ コメントを保持して配置しました','ok');
+          _moveCtx=null; renderSheet();
+        }
+      } else openRight(rid, i);
+    }
     else if(act==='rm-photo'){ removePhoto(rid, side, i); _moveCtx=null; }
     else if(act==='rm-rtxt')    clearRtxt(rid, i);
     else if(act==='del-row')    delRow(rid);
@@ -1074,18 +1101,21 @@ function buildRow(row, idx){
 
 function buildLeftCell(rid, idx, src){
   const cell=document.createElement('div');
-  cell.className='pcell'+(src?' has-img':'');
+  const isMoveActive=_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx;
+  cell.className='pcell'+(src?' has-img':'')+(isMoveActive?' move-selected':'');
   cell.dataset.act='open-src'; cell.dataset.rid=rid; cell.dataset.side='left'; cell.dataset.idx=idx;
   if(src){
     const img=document.createElement('img'); img.src=src; img.alt='';
     const lbl=document.createElement('div'); lbl.className='pcell-lbl'; lbl.textContent='指摘';
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-photo'; rm.dataset.rid=rid; rm.dataset.side='left'; rm.dataset.idx=idx;
-    const mv=document.createElement('button');
-    mv.className='pcell-mv'+(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx?' active':'');
-    mv.textContent=(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx)?'📍':'✂️';
-    mv.dataset.act='mv-photo'; mv.dataset.rid=rid; mv.dataset.side='left'; mv.dataset.idx=idx;
-    cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm); cell.appendChild(mv);
+    // 長押しで移動モード開始
+    addLongPress(cell, ()=>{
+      _moveCtx={rid,side:'left',idx,src};
+      showToast('✂️ 移動先のセルをタップしてください','warn');
+      renderSheet();
+    });
+    cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm);
   } else {
     const ico=document.createElement('div'); ico.className='pcell-empty-ico'; ico.textContent='📷';
     const txt=document.createElement('div'); txt.className='pcell-empty-txt'; txt.textContent='タップで写真追加';
@@ -1096,8 +1126,9 @@ function buildLeftCell(rid, idx, src){
 
 function buildRightCell(rid, idx, src, rtxt){
   if(src){
+    const isMoveActiveR=_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='right'&&_moveCtx.idx===idx;
     const cell=document.createElement('div');
-    cell.className='pcell R has-img';
+    cell.className='pcell R has-img'+(isMoveActiveR?' move-selected':'');
     cell.dataset.act='open-right'; cell.dataset.rid=rid; cell.dataset.idx=idx;
     const img=document.createElement('img'); img.src=src; img.alt='';
     const lbl=document.createElement('div'); lbl.className='pcell-lbl green'; lbl.textContent='是正完了';
@@ -1740,7 +1771,9 @@ async function convertToXlsm(xlsxUint8) {
   const sheetFiles = Object.keys(srcZip.files)
     .filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n));
   for(const sn of sheetFiles){
-    let sXml = await srcZip.file(sn).async('string');
+    const sf = srcZip.file(sn);
+    if(!sf) continue;
+    let sXml = await sf.async('string');
     sXml = sXml.replace(/dyDescent="0\.25"/g, 'dyDescent="0.2"');
     zip.file(sn, sXml);
   }
@@ -1753,7 +1786,9 @@ async function convertToXlsm(xlsxUint8) {
     /xl\/sharedStrings/.test(n)
   );
   for(const fn of copyNames){
-    const d = await srcZip.file(fn).async('uint8array');
+    const f = srcZip.file(fn);
+    if(!f) continue;  // nullチェック
+    const d = await f.async('uint8array');
     zip.file(fn, d);
   }
 
@@ -1816,6 +1851,17 @@ function openOv(id){ document.getElementById(id).classList.add('on'); }
 function closeOv(id){ document.getElementById(id).classList.remove('on'); }
 
 // ─── UTILS ───────────────────────────────────────────
+// 長押し検出ユーティリティ（600ms）
+function addLongPress(el, callback){
+  let timer=null;
+  el.addEventListener('pointerdown', e=>{
+    timer=setTimeout(()=>{ timer=null; callback(); }, 600);
+  });
+  ['pointerup','pointercancel','pointermove'].forEach(ev=>{
+    el.addEventListener(ev, ()=>{ if(timer){clearTimeout(timer);timer=null;} });
+  });
+}
+
 function xe(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function installApp(){
   if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; }); }
