@@ -566,6 +566,7 @@ let session   = null;
 //   LP=left photos, RP=right photos, RT=right text comments, RC=right photo comments (unused for now)
 
 let _photoCtx   = null; // {rid, side, startIdx}
+let _moveCtx    = null; // 移動元: { rid, side, idx, src }
 let _rightCtx   = null; // {rid, idx}
 let _cmtTarget  = null; // {rid, side, idx} or {rid} for left comment
 let _previewFiles = [];  // File[] pending placement
