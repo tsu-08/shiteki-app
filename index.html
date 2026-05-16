@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>指摘写真生成</title>
+<title>指摘写真アプリ</title>
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="指摘写真生成">
+<meta name="apple-mobile-web-app-title" content="指摘写真アプリ">
 <meta name="theme-color" content="#1b3a6b">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -316,6 +316,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 <div class="pnl on" id="pnl-home">
   <div class="home">
     <div class="hero"><div class="ico">🏗</div><h1>指摘写真アプリ</h1><p>住まいと土地の総合相談センター</p></div>
+    <div id="ios-install-banner" style="display:none;align-items:center;gap:10px;background:#e8f0fe;border:1.5px solid #4a7fc1;border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:12px;color:#1b3a6b;">
+      <span style="font-size:22px">📲</span>
+      <div id="ios-install-msg"><b>ホーム画面に追加できます</b><br>Safariの共有ボタン（□↑）→「ホーム画面に追加」をタップ</div>
+    </div>
     <div class="hbtns">
       <button class="hbtn pri" id="btn-new"><span class="bi">📝</span><div class="bt"><h3>新規作成</h3><p>物件名・検査日・担当者・種別を設定</p></div></button>
       <button class="hbtn" id="btn-load"><span class="bi">📂</span><div class="bt"><h3>過去の物件を読み込む</h3><p>保存済みの記録を呼び出す</p></div></button>
@@ -747,6 +751,7 @@ function init() {
   renderInspChips();
   showBot('home');
   bindAll();
+  checkIOSInstallPrompt();
   // 初回起動またはGAS未設定の場合はウィザードを表示
 }
 function ls(k){ return localStorage.getItem(k); }
@@ -972,6 +977,29 @@ function showBot(ctx){
 }
 
 // ─── HOME ────────────────────────────────────────────
+// iOS「ホーム画面に追加」案内
+function checkIOSInstallPrompt(){
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+  if(!isIOS) return;
+  const isStandalone = window.navigator.standalone === true;
+  if(isStandalone) return; // すでにPWAとして起動中なら不要
+  const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
+  const isChrome = /CriOS/.test(navigator.userAgent);
+  const banner = document.getElementById('ios-install-banner');
+  const msg    = document.getElementById('ios-install-msg');
+  if(!banner || !msg) return;
+  if(isSafari){
+    // SafariはそのままホームUI追加手順を案内
+    msg.innerHTML = '<b>ホーム画面に追加できます</b><br>下の共有ボタン（□↑）→「ホーム画面に追加」をタップ';
+    banner.style.display = 'flex';
+  } else if(isChrome){
+    // ChromeはSafariで開き直す必要がある
+    msg.innerHTML = '<b>ホーム画面に追加するにはSafariが必要です</b><br>右下の「…」→「Safariで開く」→共有ボタン（□↑）→「ホーム画面に追加」';
+    banner.style.display = 'flex';
+  }
+  // その他ブラウザ（LINE等）は案内しない
+}
+
 function toggleArc(){
   const s = document.getElementById('arc-sec');
   s.style.display = s.style.display==='none' ? 'block' : 'none';
@@ -1556,20 +1584,39 @@ async function saveToArc(){
 async function printAsPdf(){
   if(!session||!session.rows.length){ showToast('⚠️ データがありません'); return; }
 
-  // ファイル名を提案（ブラウザのデフォルトタイトルを変更）
   const d = (session.date||'').replace(/-/g,'');
   const owner = session.owner||'物件';
   const type = session.type||'';
   const suggestedName = `【是正完了】${d}_${owner}_指摘写真_${type}`;
+
+  // iOS PWAモード（standalone）ではwindow.print()が動作しない
+  // → Safariで開くよう案内するトースト＋URLをコピー
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+
+  goTab('sheet');
+
+  if(isIOS && isStandalone){
+    // PWAモード：Safariで開くよう案内
+    showToast('📋 SafariでこのURLを開いてPDF出力してください', 'warn', 5000);
+    // URLをクリップボードにコピー
+    try {
+      await navigator.clipboard.writeText(location.href);
+      showToast('🔗 URLをコピーしました。Safariで開いてください', 'warn', 5000);
+    } catch(e) {}
+    return;
+  }
+
   const originalTitle = document.title;
   document.title = suggestedName;
 
-  goTab('sheet');
+  // iOS Safari（非PWA）: 800ms待機してprint
+  const delay = isIOS ? 800 : 500;
   setTimeout(()=>{
     window.print();
-    // 印刷後にタイトルを戻す
     setTimeout(()=>{ document.title = originalTitle; }, 2000);
-  }, 500);
+  }, delay);
 }
 // ─── Excel生成（exceljs ブラウザローカル生成）────────────
 async function generateExcel(){
@@ -1880,10 +1927,10 @@ function installApp(){
   else { showToast('ブラウザのメニューから「ホーム画面に追加」を選択してください','ok'); }
 }
 let _tt;
-function showToast(msg,cls=''){
+function showToast(msg,cls='',duration=2800){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='toast on '+cls;
-  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('on'),2800);
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('on'),duration);
 }
 </script>
 <script>
