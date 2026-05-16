@@ -136,6 +136,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .pcell-rm{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;
   background:rgba(0,0,0,.6);border:none;color:#fff;font-size:12px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;z-index:2}
+.pcell-mv{position:absolute;top:3px;left:28px;width:22px;height:22px;border-radius:50%;
+  background:rgba(80,80,200,.7);border:none;color:#fff;font-size:12px;cursor:grab;
+  display:flex;align-items:center;justify-content:center;z-index:2;touch-action:none}
+.pcell-mv.active{background:rgba(220,80,0,.85);animation:pulse .6s infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.15)}}
+.pcell.drag-over{outline:3px dashed #3366cc;outline-offset:-3px}
+.pcell.dragging{opacity:.4}
 .pcell-num{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
   background:var(--navy);color:#fff;font-size:10px;font-weight:900;
   display:flex;align-items:center;justify-content:center;z-index:2}
@@ -309,7 +316,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 <!-- HOME -->
 <div class="pnl on" id="pnl-home">
   <div class="home">
-    <div class="hero"><div class="ico">🏗</div><h1>現場検査記録アプリ</h1><p>住まいと土地の総合相談センター</p></div>
+    <div class="hero"><div class="ico">🏗</div><h1>指摘写真アプリ</h1><p>住まいと土地の総合相談センター</p></div>
     <div class="hbtns">
       <button class="hbtn pri" id="btn-new"><span class="bi">📝</span><div class="bt"><h3>新規作成</h3><p>物件名・検査日・担当者・種別を設定</p></div></button>
       <button class="hbtn" id="btn-load"><span class="bi">📂</span><div class="bt"><h3>過去の物件を読み込む</h3><p>保存済みの記録を呼び出す</p></div></button>
@@ -821,21 +828,13 @@ function bindAll(){
     if(!btn) return;
     const {act,rid,side,idx} = btn.dataset;
     const i = parseInt(idx);
-    // 移動モード中の処理
-    if(_moveCtx && (act==='open-src'||act==='open-right')){
-      const dstRow=getRow(rid); if(!dstRow) return;
+    // 移動モード中の処理（✋ボタン → タップ方式）
+    if(_moveCtx && (act==='open-src'||act==='open-right'||act==='rm-rtxt')){
+      // rm-rtxtボタンへのタップは移動先として扱わない
+      if(act==='rm-rtxt'){ clearRtxt(rid, i); _moveCtx=null; renderSheet(); return; }
       const dstSide=side||'right', dstIdx=i;
-      const srcRow=getRow(_moveCtx.rid);
-      const dstSrc=dstSide==='left'?dstRow.LP[dstIdx]:dstRow.RP[dstIdx];
-      if(dstSide==='left') dstRow.LP[dstIdx]=_moveCtx.src;
-      else dstRow.RP[dstIdx]=_moveCtx.src;
-      if(srcRow){
-        if(_moveCtx.side==='left') srcRow.LP[_moveCtx.idx]=dstSrc||null;
-        else srcRow.RP[_moveCtx.idx]=dstSrc||null;
-      }
-      _moveCtx=null;
-      showToast(dstSrc?'✅ 写真を入れ替えました':'✅ 写真を移動しました','ok');
-      renderSheet(); return;
+      _applyPhotoMove(_moveCtx, {rid, side:dstSide, idx:dstIdx});
+      return;
     }
     if(act==='mv-photo'){
       const srcRow=getRow(rid); if(!srcRow) return;
@@ -853,6 +852,98 @@ function bindAll(){
     else if(act==='rm-photo'){ removePhoto(rid, side, i); _moveCtx=null; }
     else if(act==='rm-rtxt')    clearRtxt(rid, i);
     else if(act==='del-row')    delRow(rid);
+  });
+
+  // ── ドラッグ&ドロップ（PC）+ タッチドラッグ（スマホ）──
+  const shRows = document.getElementById('sh-rows');
+  let _dragSrc = null; // {rid, side, idx, src}
+
+  shRows.addEventListener('dragstart', e=>{
+    const cell = e.target.closest('[data-drag-rid]');
+    if(!cell) return;
+    _dragSrc = {rid:cell.dataset.dragRid, side:cell.dataset.dragSide, idx:parseInt(cell.dataset.dragIdx)};
+    const row = getRow(_dragSrc.rid);
+    _dragSrc.src = _dragSrc.side==='left' ? row.LP[_dragSrc.idx] : row.RP[_dragSrc.idx];
+    cell.classList.add('dragging');
+    e.dataTransfer.effectAllowed='move';
+  });
+  shRows.addEventListener('dragend', e=>{
+    shRows.querySelectorAll('.dragging,.drag-over').forEach(el=>{
+      el.classList.remove('dragging','drag-over');
+    });
+  });
+  shRows.addEventListener('dragover', e=>{
+    e.preventDefault();
+    const cell = e.target.closest('[data-drop-rid],[data-drag-rid]');
+    shRows.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    if(cell) cell.classList.add('drag-over');
+  });
+  shRows.addEventListener('drop', e=>{
+    e.preventDefault();
+    if(!_dragSrc) return;
+    const cell = e.target.closest('[data-drop-rid],[data-drag-rid]');
+    if(!cell) { _dragSrc=null; return; }
+    const dstRid  = cell.dataset.dropRid  || cell.dataset.dragRid;
+    const dstSide = cell.dataset.dropSide || cell.dataset.dragSide || 'right';
+    const dstIdx  = parseInt(cell.dataset.dropIdx ?? cell.dataset.dragIdx);
+    _applyPhotoMove(_dragSrc, {rid:dstRid, side:dstSide, idx:dstIdx});
+    _dragSrc=null;
+    shRows.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  });
+
+  // タッチドラッグ（スマホ用）
+  let _touchSrc=null, _touchGhost=null;
+  shRows.addEventListener('touchstart', e=>{
+    const mv = e.target.closest('.pcell-mv');
+    if(!mv) return;
+    e.preventDefault();
+    const cell = mv.closest('[data-drag-rid]');
+    if(!cell) return;
+    _touchSrc={rid:cell.dataset.dragRid, side:cell.dataset.dragSide, idx:parseInt(cell.dataset.dragIdx)};
+    const row=getRow(_touchSrc.rid);
+    _touchSrc.src=_touchSrc.side==='left'?row.LP[_touchSrc.idx]:row.RP[_touchSrc.idx];
+    // ゴースト表示
+    _touchGhost=document.createElement('div');
+    _touchGhost.style.cssText='position:fixed;z-index:9999;pointer-events:none;width:70px;height:50px;border-radius:6px;background:#333;opacity:.8;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;transform:translate(-50%,-50%)';
+    _touchGhost.textContent='📷';
+    document.body.appendChild(_touchGhost);
+    const t=e.touches[0];
+    _touchGhost.style.left=t.clientX+'px'; _touchGhost.style.top=t.clientY+'px';
+    cell.classList.add('dragging');
+  },{passive:false});
+  shRows.addEventListener('touchmove', e=>{
+    if(!_touchSrc||!_touchGhost) return;
+    e.preventDefault();
+    const t=e.touches[0];
+    _touchGhost.style.left=t.clientX+'px'; _touchGhost.style.top=t.clientY+'px';
+    // ドロップ先ハイライト
+    _touchGhost.style.display='none';
+    const el=document.elementFromPoint(t.clientX, t.clientY);
+    _touchGhost.style.display='';
+    shRows.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    if(el){
+      const dst=el.closest('[data-drop-rid],[data-drag-rid]');
+      if(dst) dst.classList.add('drag-over');
+    }
+  },{passive:false});
+  shRows.addEventListener('touchend', e=>{
+    if(!_touchSrc) return;
+    if(_touchGhost){ _touchGhost.remove(); _touchGhost=null; }
+    shRows.querySelectorAll('.dragging').forEach(el=>el.classList.remove('dragging'));
+    const t=e.changedTouches[0];
+    _touchGhost && (_touchGhost.style.display='none');
+    const el=document.elementFromPoint(t.clientX, t.clientY);
+    shRows.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    if(el){
+      const dst=el.closest('[data-drop-rid],[data-drag-rid]');
+      if(dst){
+        const dstRid  = dst.dataset.dropRid  || dst.dataset.dragRid;
+        const dstSide = dst.dataset.dropSide || dst.dataset.dragSide || 'right';
+        const dstIdx  = parseInt(dst.dataset.dropIdx ?? dst.dataset.dragIdx);
+        _applyPhotoMove(_touchSrc, {rid:dstRid, side:dstSide, idx:dstIdx});
+      }
+    }
+    _touchSrc=null;
   });
 
   // Template manager
@@ -1078,11 +1169,17 @@ function buildLeftCell(rid, idx, src){
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-photo'; rm.dataset.rid=rid; rm.dataset.side='left'; rm.dataset.idx=idx;
     const mv=document.createElement('button');
-    mv.className='pcell-mv'+(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx?' active':'');
-    mv.textContent=(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx)?'📍':'✂️';
+    const isActive=_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='left'&&_moveCtx.idx===idx;
+    mv.className='pcell-mv'+(isActive?' active':'');
+    mv.textContent=isActive?'📍':'✋';
     mv.dataset.act='mv-photo'; mv.dataset.rid=rid; mv.dataset.side='left'; mv.dataset.idx=idx;
+    // HTML5 drag
+    cell.draggable=true;
+    cell.dataset.dragRid=rid; cell.dataset.dragSide='left'; cell.dataset.dragIdx=idx;
     cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm); cell.appendChild(mv);
   } else {
+    // 空セルもドロップ先として機能させる
+    cell.dataset.dropRid=rid; cell.dataset.dropSide='left'; cell.dataset.dropIdx=idx;
     const ico=document.createElement('div'); ico.className='pcell-empty-ico'; ico.textContent='📷';
     const txt=document.createElement('div'); txt.className='pcell-empty-txt'; txt.textContent='タップで写真追加';
     cell.appendChild(ico); cell.appendChild(txt);
@@ -1100,9 +1197,13 @@ function buildRightCell(rid, idx, src, rtxt){
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-photo'; rm.dataset.rid=rid; rm.dataset.side='right'; rm.dataset.idx=idx;
     const mv2=document.createElement('button');
-    mv2.className='pcell-mv'+(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='right'&&_moveCtx.idx===idx?' active':'');
-    mv2.textContent=(_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='right'&&_moveCtx.idx===idx)?'📍':'✂️';
+    const isActive2=_moveCtx&&_moveCtx.rid===rid&&_moveCtx.side==='right'&&_moveCtx.idx===idx;
+    mv2.className='pcell-mv'+(isActive2?' active':'');
+    mv2.textContent=isActive2?'📍':'✋';
     mv2.dataset.act='mv-photo'; mv2.dataset.rid=rid; mv2.dataset.side='right'; mv2.dataset.idx=idx;
+    // HTML5 drag
+    cell.draggable=true;
+    cell.dataset.dragRid=rid; cell.dataset.dragSide='right'; cell.dataset.dragIdx=idx;
     cell.appendChild(img); cell.appendChild(lbl); cell.appendChild(rm); cell.appendChild(mv2);
     return cell;
   }
@@ -1110,9 +1211,10 @@ function buildRightCell(rid, idx, src, rtxt){
     const cell=document.createElement('div');
     cell.className='rtxt-cell';
     cell.dataset.act='open-right'; cell.dataset.rid=rid; cell.dataset.idx=idx;
+    // ドロップ先として機能させる（コメントの上に写真を載せられる）
+    cell.dataset.dropRid=rid; cell.dataset.dropSide='right'; cell.dataset.dropIdx=idx;
     const t=document.createElement('div');
     t.style.cssText='font-size:11px;line-height:1.55;flex:1;width:100%;overflow:hidden;white-space:pre-wrap;word-break:break-all;';
-    // \n を実際の改行として表示
     t.textContent=rtxt.replace(/\\n/g,'\n');
     const lbl=document.createElement('div'); lbl.className='pcell-lbl'; lbl.textContent='是正コメント';
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
@@ -1123,6 +1225,7 @@ function buildRightCell(rid, idx, src, rtxt){
   const cell=document.createElement('div');
   cell.className='pcell R';
   cell.dataset.act='open-right'; cell.dataset.rid=rid; cell.dataset.idx=idx;
+  cell.dataset.dropRid=rid; cell.dataset.dropSide='right'; cell.dataset.dropIdx=idx;
   const ico=document.createElement('div'); ico.className='pcell-empty-ico'; ico.textContent='✍️';
   const txt=document.createElement('div'); txt.className='pcell-empty-txt'; txt.textContent='写真 or コメント';
   cell.appendChild(ico); cell.appendChild(txt);
@@ -1478,7 +1581,7 @@ async function generateExcel(){
     }
 
     const wb = new ExcelJS.Workbook();
-    wb.creator = '現場検査記録アプリ';
+    wb.creator = '指摘写真アプリ';
     wb.created = new Date();
 
     // ── レイアウト定数（A4縦・4:3写真最適化）──
@@ -1686,7 +1789,33 @@ function addImageToWorkbook(wb, dataUrl){
 }
 
 // Excel共有：navigator.share()対応ならシート表示、非対応はDL
-// xlsmテンプレート（test_v8_1.xlsmベース・行高180pt固定）
+// ── 写真移動ヘルパー（コメントを保持しつつ写真を配置）──
+function _applyPhotoMove(src, dst){
+  if(!src||!dst) return;
+  // 同じセルへのドロップは無視
+  if(src.rid===dst.rid && src.side===dst.side && src.idx===dst.idx) return;
+  const srcRow=getRow(src.rid), dstRow=getRow(dst.rid);
+  if(!srcRow||!dstRow) return;
+  const srcPhoto=src.src;
+  const dstPhoto=dst.side==='left'?dstRow.LP[dst.idx]:dstRow.RP[dst.idx];
+  const dstRtxt=dst.side==='right'?dstRow.RT[dst.idx]:null;
+
+  // 移動先に写真をセット
+  if(dst.side==='left') dstRow.LP[dst.idx]=srcPhoto;
+  else dstRow.RP[dst.idx]=srcPhoto;
+  // コメントは削除しない（写真が上に乗る形）
+
+  // 移動元の処理：移動先に既存写真があれば入れ替え、なければ空にする
+  if(src.side==='left') srcRow.LP[src.idx]=dstPhoto||null;
+  else srcRow.RP[src.idx]=dstPhoto||null;
+
+  const msg = dstPhoto ? '✅ 写真を入れ替えました' : (dstRtxt ? '✅ 写真をコメント欄に配置しました' : '✅ 写真を移動しました');
+  _moveCtx=null;
+  showToast(msg,'ok');
+  renderSheet();
+}
+
+
 const XLSM_TMPL = {
   ct:'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pg0KPFR5cGVzIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvcGFja2FnZS8yMDA2L2NvbnRlbnQtdHlwZXMiPjxEZWZhdWx0IEV4dGVuc2lvbj0iYmluIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LnNwcmVhZHNoZWV0bWwucHJpbnRlclNldHRpbmdzIi8+PERlZmF1bHQgRXh0ZW5zaW9uPSJqcGVnIiBDb250ZW50VHlwZT0iaW1hZ2UvanBlZyIvPjxEZWZhdWx0IEV4dGVuc2lvbj0icmVscyIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1wYWNrYWdlLnJlbGF0aW9uc2hpcHMreG1sIi8+PERlZmF1bHQgRXh0ZW5zaW9uPSJ4bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi94bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii94bC93b3JrYm9vay54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQubXMtZXhjZWwuc2hlZXQubWFjcm9FbmFibGVkLm1haW4reG1sIi8+PE92ZXJyaWRlIFBhcnROYW1lPSIveGwvd29ya3NoZWV0cy9zaGVldDEueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LnNwcmVhZHNoZWV0bWwud29ya3NoZWV0K3htbCIvPjxPdmVycmlkZSBQYXJ0TmFtZT0iL3hsL3RoZW1lL3RoZW1lMS54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQudGhlbWUreG1sIi8+PE92ZXJyaWRlIFBhcnROYW1lPSIveGwvc3R5bGVzLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC5zcHJlYWRzaGVldG1sLnN0eWxlcyt4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii94bC9zaGFyZWRTdHJpbmdzLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC5zcHJlYWRzaGVldG1sLnNoYXJlZFN0cmluZ3MreG1sIi8+PE92ZXJyaWRlIFBhcnROYW1lPSIveGwvZHJhd2luZ3MvZHJhd2luZzEueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LmRyYXdpbmcreG1sIi8+PE92ZXJyaWRlIFBhcnROYW1lPSIveGwvdmJhUHJvamVjdC5iaW4iIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQubXMtb2ZmaWNlLnZiYVByb2plY3QiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii9kb2NQcm9wcy9jb3JlLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1wYWNrYWdlLmNvcmUtcHJvcGVydGllcyt4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii9kb2NQcm9wcy9hcHAueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LmV4dGVuZGVkLXByb3BlcnRpZXMreG1sIi8+PC9UeXBlcz4=',
   rels:'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pg0KPFJlbGF0aW9uc2hpcHMgeG1sbnM9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvcmVsYXRpb25zaGlwcyI+PFJlbGF0aW9uc2hpcCBJZD0icklkMyIgVHlwZT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcy9leHRlbmRlZC1wcm9wZXJ0aWVzIiBUYXJnZXQ9ImRvY1Byb3BzL2FwcC54bWwiLz48UmVsYXRpb25zaGlwIElkPSJySWQyIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvcGFja2FnZS8yMDA2L3JlbGF0aW9uc2hpcHMvbWV0YWRhdGEvY29yZS1wcm9wZXJ0aWVzIiBUYXJnZXQ9ImRvY1Byb3BzL2NvcmUueG1sIi8+PFJlbGF0aW9uc2hpcCBJZD0icklkMSIgVHlwZT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL29mZmljZURvY3VtZW50LzIwMDYvcmVsYXRpb25zaGlwcy9vZmZpY2VEb2N1bWVudCIgVGFyZ2V0PSJ4bC93b3JrYm9vay54bWwiLz48L1JlbGF0aW9uc2hpcHM+',
@@ -1705,7 +1834,6 @@ async function convertToXlsm(xlsxUint8){
   if(typeof JSZip==='undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
   const src=await JSZip.loadAsync(xlsxUint8);
   const zip=new JSZip();
-  zip.file('[Content_Types].xml', b64ToU8(XLSM_TMPL.ct));
   zip.file('_rels/.rels',         b64ToU8(XLSM_TMPL.rels));
   zip.file('xl/vbaProject.bin',   b64ToU8(XLSM_TMPL.vba));
   zip.file('xl/theme/theme1.xml', b64ToU8(XLSM_TMPL.theme));
@@ -1719,16 +1847,17 @@ async function convertToXlsm(xlsxUint8){
   const wbRels=await src.file('xl/_rels/workbook.xml.rels').async('string');
   const vbaRel='<Relationship Id="rIdVba" Type="http://schemas.microsoft.com/office/2006/relationships/vbaProject" Target="vbaProject.bin"/>';
   zip.file('xl/_rels/workbook.xml.rels', wbRels.includes('vbaProject') ? wbRels : wbRels.replace('</Relationships>',vbaRel+'\n</Relationships>'));
-  // シートXML（dyDescent修正）
+  // シートXML一覧取得（後続で処理）
   const sheets=Object.keys(src.files).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n));
-  for(const sn of sheets){
-    const sf=src.file(sn); if(!sf) continue;
-    const sxml=await sf.async('string');
-    zip.file(sn, sxml.replace(/dyDescent="0\.25"/g,'dyDescent="0.2"'));
+  // 【修正①】printerSettings1.binをテンプレートから全シート分追加
+  // printerSettings1.binはA4縦・印刷設定の正しいバイナリ
+  const PS_BIN = b64ToU8('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEEAwbcAAAAAy8BAAEACQCaCzQIZAABAA8A//8CAAEA//8DAAEAQQA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAgAAAAEAAAD/////R0lTNAAAAAAAAAAAAAAAAA==');
+  for(let i=0;i<sheets.length;i++){
+    zip.file('xl/printerSettings/printerSettings'+(i+1)+'.bin', PS_BIN);
   }
-  // drawing・画像・rels・sharedStringsをコピー
+
+  // 【修正②】drawing・画像・sharedStringsをコピー（_relsはexceljs生成を使わず再生成）
   const copies=Object.keys(src.files).filter(n=>
-    /xl\/worksheets\/_rels\//.test(n)||
     /xl\/drawings\//.test(n)||
     /xl\/media\//.test(n)||
     /xl\/sharedStrings/.test(n)
@@ -1737,6 +1866,85 @@ async function convertToXlsm(xlsxUint8){
     const f=src.file(fn); if(!f) continue;
     zip.file(fn, await f.async('uint8array'));
   }
+
+  // 【修正③】sheet1.xml.relsを各シートごとに正しく生成
+  // exceljsのrelsはprinterSettingsへの参照がないため再生成が必要
+  const drawFiles = Object.keys(src.files).filter(n=>/xl\/drawings\/drawing\d+\.xml$/.test(n));
+  for(let i=0;i<sheets.length;i++){
+    const sheetN = i+1;
+    // drawingNが存在する場合のみrId2を追加
+    const hasDrw = drawFiles.some(n=>n===`xl/drawings/drawing${sheetN}.xml`) ||
+                   src.file(`xl/drawings/drawing${sheetN}.xml`) !== null;
+    let sRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n';
+    sRels += '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+    sRels += `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings" Target="../printerSettings/printerSettings${sheetN}.bin"/>`;
+    if(hasDrw){
+      sRels += `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${sheetN}.xml"/>`;
+    }
+    sRels += '</Relationships>';
+    zip.file(`xl/worksheets/_rels/sheet${sheetN}.xml.rels`, sRels);
+  }
+
+  // 【修正④】sheet.xmlのprinterSettings・drawing参照を追加（exceljsが生成するsheet.xmlに追記）
+  for(let i=0;i<sheets.length;i++){
+    const sn = sheets[i];
+    const sf = src.file(sn); if(!sf) continue;
+    let sxml = await sf.async('string');
+    // dyDescent修正
+    sxml = sxml.replace(/dyDescent="0\.25"/g,'dyDescent="0.2"');
+    // drawing参照がなければ追加（</worksheet>の直前）
+    const sheetN = i+1;
+    const hasDrw = drawFiles.some(n=>n===`xl/drawings/drawing${sheetN}.xml`) ||
+                   src.file(`xl/drawings/drawing${sheetN}.xml`) !== null;
+    if(hasDrw){
+      // exceljsはdrawingをrId1で参照するが、我々のrelsではrId2=drawing, rId1=printerSettings
+      // exceljsが既にdrawing参照を入れている場合はrId1→rId2に修正
+      if(sxml.includes('<drawing r:id="rId1"')){
+        sxml = sxml.replace('<drawing r:id="rId1"','<drawing r:id="rId2"');
+      } else if(!sxml.includes('<drawing ')){
+        sxml = sxml.replace('</worksheet>',`<drawing r:id="rId2"/></worksheet>`);
+      }
+    }
+    // printerSettings参照のためpageSetupにr:id="rId1"を追加
+    if(sxml.includes('<pageSetup ') && !sxml.includes('r:id="rId1"')){
+      sxml = sxml.replace(/<pageSetup ([^/]*)\/>/, `<pageSetup $1 r:id="rId1"/>`);
+    } else if(!sxml.includes('<pageSetup ')){
+      // pageSetupがない場合は<drawing>の前に挿入
+      const psTag = `<pageSetup paperSize="9" orientation="portrait" r:id="rId1"/>`;
+      if(sxml.includes('<drawing ')){
+        sxml = sxml.replace('<drawing ',psTag+'<drawing ');
+      }
+    }
+    zip.file(sn, sxml);
+  }
+
+  // 【修正⑤】Content_Types.xmlを正しく生成
+  // bin DefaultはprinterSettings用（vbaProjectはOverrideで個別登録）
+  let ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  ct += '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">';
+  ct += '<Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings"/>';
+  ct += '<Default Extension="jpeg" ContentType="image/jpeg"/>';
+  ct += '<Default Extension="png" ContentType="image/png"/>';
+  ct += '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>';
+  ct += '<Default Extension="xml" ContentType="application/xml"/>';
+  ct += '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.ms-excel.sheet.macroEnabled.main+xml"/>';
+  for(const sn of sheets){
+    ct += '<Override PartName="/' + sn + '" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  }
+  ct += '<Override PartName="/xl/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>';
+  ct += '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+  if(src.file('xl/sharedStrings.xml')){
+    ct += '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>';
+  }
+  for(const dn of drawFiles){
+    ct += '<Override PartName="/' + dn + '" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>';
+  }
+  // vbaProjectはOverrideで登録（binのDefaultと衝突させない）
+  ct += '<Override PartName="/xl/vbaProject.bin" ContentType="application/vnd.ms-office.vbaProject"/>';
+  ct += '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>';
+  ct += '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>';
+  ct += '</Types>';
+  zip.file('[Content_Types].xml', ct);
   return zip.generateAsync({type:'uint8array',mimeType:'application/vnd.ms-excel.sheet.macroEnabled.12'});
 }
 
