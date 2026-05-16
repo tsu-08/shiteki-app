@@ -1591,9 +1591,11 @@ async function generateExcel(){
     // セル幅98mm × 高さ74mm → 4:3写真(1.33)がセルぴったり
     // 16:9写真は上下に余白、fitToHeight=1で印刷時自動縮小(約96%)
     const COL_W       = 44;   // 列幅（文字単位）→ 約98mm × 2列 ≒ 196mm
-    const ROW_H_HDR   = 23;   // ヘッダー行高（pt）≒ 8mm
-    const ROW_H_SUB   = 14;   // サブヘッダー行高（pt）≒ 5mm
-    const ROW_H_PHOTO = 180;  // 写真行高（スマホ基準・Excel表示180pt）
+    // exceljsのrow.heightはExcel表示ポイントの3/2倍を渡す必要がある
+    // （exceljs内部の単位換算ズレ: height値 * 2/3 = Excel表示pt）
+    const ROW_H_HDR   = 34.5; // Excel表示23pt相当
+    const ROW_H_SUB   = 21;   // Excel表示14pt相当
+    const ROW_H_PHOTO = 270;  // Excel表示180pt相当
     const PHOTO_ROWS  = 4;
     const TOTAL_ROWS  = PHOTO_ROWS + 2; // 6行固定
 
