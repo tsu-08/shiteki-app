@@ -859,13 +859,17 @@ function bindAll(){
   let _dragSrc = null; // {rid, side, idx, src}
 
   shRows.addEventListener('dragstart', e=>{
+    // imgのデフォルトドラッグを無効化（ブラウザがimg要素のドラッグを横取りするため）
+    if(e.target.tagName==='IMG'){ e.preventDefault(); return; }
     const cell = e.target.closest('[data-drag-rid]');
     if(!cell) return;
     _dragSrc = {rid:cell.dataset.dragRid, side:cell.dataset.dragSide, idx:parseInt(cell.dataset.dragIdx)};
     const row = getRow(_dragSrc.rid);
+    if(!row){ e.preventDefault(); return; }
     _dragSrc.src = _dragSrc.side==='left' ? row.LP[_dragSrc.idx] : row.RP[_dragSrc.idx];
     cell.classList.add('dragging');
     e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain', JSON.stringify(_dragSrc));
   });
   shRows.addEventListener('dragend', e=>{
     shRows.querySelectorAll('.dragging,.drag-over').forEach(el=>{
@@ -1164,7 +1168,7 @@ function buildLeftCell(rid, idx, src){
   cell.className='pcell'+(src?' has-img':'');
   cell.dataset.act='open-src'; cell.dataset.rid=rid; cell.dataset.side='left'; cell.dataset.idx=idx;
   if(src){
-    const img=document.createElement('img'); img.src=src; img.alt='';
+    const img=document.createElement('img'); img.src=src; img.alt=''; img.draggable=false;
     const lbl=document.createElement('div'); lbl.className='pcell-lbl'; lbl.textContent='指摘';
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-photo'; rm.dataset.rid=rid; rm.dataset.side='left'; rm.dataset.idx=idx;
@@ -1192,7 +1196,7 @@ function buildRightCell(rid, idx, src, rtxt){
     const cell=document.createElement('div');
     cell.className='pcell R has-img';
     cell.dataset.act='open-right'; cell.dataset.rid=rid; cell.dataset.idx=idx;
-    const img=document.createElement('img'); img.src=src; img.alt='';
+    const img=document.createElement('img'); img.src=src; img.alt=''; img.draggable=false;
     const lbl=document.createElement('div'); lbl.className='pcell-lbl green'; lbl.textContent='是正完了';
     const rm=document.createElement('button'); rm.className='pcell-rm'; rm.textContent='✕';
     rm.dataset.act='rm-photo'; rm.dataset.rid=rid; rm.dataset.side='right'; rm.dataset.idx=idx;
@@ -1885,37 +1889,64 @@ async function convertToXlsm(xlsxUint8){
     zip.file(`xl/worksheets/_rels/sheet${sheetN}.xml.rels`, sRels);
   }
 
-  // 【修正④】sheet.xmlのprinterSettings・drawing参照を追加（exceljsが生成するsheet.xmlに追記）
+  // 【修正④】sheet.xmlの修正（名前空間・参照・行高）
+  // テンプレートと同じ完全な名前空間セット（Excelが期待するもの）
+  const TMPL_WS_OPEN = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+    +' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
+    +' xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"'
+    +' mc:Ignorable="x14ac xr xr2 xr3"'
+    +' xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"'
+    +' xmlns:xr="http://schemas.microsoft.com/office/spreadsheetml/2014/revision"'
+    +' xmlns:xr2="http://schemas.microsoft.com/office/spreadsheetml/2015/revision2"'
+    +' xmlns:xr3="http://schemas.microsoft.com/office/spreadsheetml/2016/revision3">';
   for(let i=0;i<sheets.length;i++){
     const sn = sheets[i];
     const sf = src.file(sn); if(!sf) continue;
     let sxml = await sf.async('string');
-    // dyDescent修正
+
+    // ①worksheetタグをテンプレートと同じ名前空間セットに置換
+    // exceljsのworksheetタグには xr/xr2/xr3 名前空間が欠けている場合があり修復エラーの原因になる
+    sxml = sxml.replace(/<worksheet[^>]+>/, TMPL_WS_OPEN);
+
+    // ②dyDescent修正（行高180ptが正しく表示されるよう）
     sxml = sxml.replace(/dyDescent="0\.25"/g,'dyDescent="0.2"');
-    // drawing参照がなければ追加（</worksheet>の直前）
+
+    // ③drawing参照をrId2に修正（rId1はprinterSettings用）
     const sheetN = i+1;
     const hasDrw = drawFiles.some(n=>n===`xl/drawings/drawing${sheetN}.xml`) ||
                    src.file(`xl/drawings/drawing${sheetN}.xml`) !== null;
     if(hasDrw){
-      // exceljsはdrawingをrId1で参照するが、我々のrelsではrId2=drawing, rId1=printerSettings
-      // exceljsが既にdrawing参照を入れている場合はrId1→rId2に修正
       if(sxml.includes('<drawing r:id="rId1"')){
         sxml = sxml.replace('<drawing r:id="rId1"','<drawing r:id="rId2"');
       } else if(!sxml.includes('<drawing ')){
         sxml = sxml.replace('</worksheet>',`<drawing r:id="rId2"/></worksheet>`);
       }
     }
-    // printerSettings参照のためpageSetupにr:id="rId1"を追加
+
+    // ④pageSetupにprinterSettings参照(r:id="rId1")を追加
     if(sxml.includes('<pageSetup ') && !sxml.includes('r:id="rId1"')){
       sxml = sxml.replace(/<pageSetup ([^/]*)\/>/, `<pageSetup $1 r:id="rId1"/>`);
     } else if(!sxml.includes('<pageSetup ')){
-      // pageSetupがない場合は<drawing>の前に挿入
       const psTag = `<pageSetup paperSize="9" orientation="portrait" r:id="rId1"/>`;
       if(sxml.includes('<drawing ')){
         sxml = sxml.replace('<drawing ',psTag+'<drawing ');
       }
     }
     zip.file(sn, sxml);
+  }
+
+  // 【修正⑤】drawing.xmlの修正
+  // exceljsのdrawingXMLに a16:creationId が含まれる場合、xmlns:a16 が未定義で修復エラーになる
+  // → wsDrタグにxmlns:a16を追加して解決
+  for(const dn of drawFiles){
+    const df = src.file(dn); if(!df) continue;
+    let dxml = await df.async('string');
+    // wsDrタグに a16 名前空間が使われているが宣言がない場合に追加
+    if(dxml.includes('a16:') && !dxml.includes('xmlns:a16=')){
+      dxml = dxml.replace('<xdr:wsDr ',
+        '<xdr:wsDr xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" ');
+    }
+    zip.file(dn, dxml);
   }
 
   // 【修正⑤】Content_Types.xmlを正しく生成
