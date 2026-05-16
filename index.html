@@ -1914,17 +1914,18 @@ async function convertToXlsm(xlsxUint8){
     // ③行高さ強制修正：exceljsのrow.heightがExcelで正しく反映されないケースへの対応
     // 写真行（row 3〜6）のht属性を直接"180"に書き換え・customHeight="1"を確実に設定
     // ヘッダー行（row 1）: ht="15.4"、サブヘッダー行（row 2）: ht="9.4"
+    // 行高さ直接書き換え（\bで単語境界を指定してcustomHeightを壊さない）
     sxml = sxml.replace(/<row r="1"([^>]*)>/g, (m,attrs) => {
-      attrs = attrs.replace(/\s*ht="[^"]*"/, '').replace(/\s*customHeight="[^"]*"/, '');
+      attrs = attrs.replace(/\bht="[^"]*"/, '').replace(/\bcustomHeight="[^"]*"/, '');
       return `<row r="1"${attrs} ht="15.4" customHeight="1">`;
     });
     sxml = sxml.replace(/<row r="2"([^>]*)>/g, (m,attrs) => {
-      attrs = attrs.replace(/\s*ht="[^"]*"/, '').replace(/\s*customHeight="[^"]*"/, '');
+      attrs = attrs.replace(/\bht="[^"]*"/, '').replace(/\bcustomHeight="[^"]*"/, '');
       return `<row r="2"${attrs} ht="9.4" customHeight="1">`;
     });
     for(let r=3; r<=6; r++){
       sxml = sxml.replace(new RegExp(`<row r="${r}"([^>]*)>`, 'g'), (m,attrs) => {
-        attrs = attrs.replace(/\s*ht="[^"]*"/, '').replace(/\s*customHeight="[^"]*"/, '');
+        attrs = attrs.replace(/\bht="[^"]*"/, '').replace(/\bcustomHeight="[^"]*"/, '');
         return `<row r="${r}"${attrs} ht="180" customHeight="1">`;
       });
     }
