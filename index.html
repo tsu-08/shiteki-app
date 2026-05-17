@@ -40,7 +40,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .tab.on .n{background:var(--navy)}
 
 /* PANELS */
-.pnl{display:none;padding-bottom:90px}.pnl.on{display:block}
+.pnl{display:none;padding-bottom:calc(90px + env(safe-area-inset-bottom))}.pnl.on{display:block}
 
 /* HOME */
 .home{padding:20px 14px}
@@ -235,7 +235,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* BOTTOM BAR */
 .botbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-  width:100%;max-width:520px;padding:9px 11px;
+  width:100%;max-width:520px;
+  padding:9px 11px;
+  padding-bottom:calc(9px + env(safe-area-inset-bottom));
   background:rgba(255,255,255,.97);backdrop-filter:blur(10px);
   border-top:1.5px solid var(--border);display:flex;gap:7px;z-index:100}
 .bbtn{flex:1;padding:12px 6px;border-radius:9px;border:none;font-size:13px;font-weight:700;
@@ -806,17 +808,20 @@ function bindAll(){
   const okTop = document.getElementById('rtxt-ok-top'); if(okTop) okTop.addEventListener('click', applyRtxt);
   document.getElementById('ov-rtxt').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeOv('ov-rtxt'); });
 
-  // Bottom bar (delegated)
-  document.getElementById('botbar').addEventListener('click', e=>{
+  // Bottom bar (delegated) - touchendも追加（iOS対応）
+  function handleBotbarAction(e){
     const a = e.target.closest('[data-action]');
     if(!a) return;
+    if(e.type==='touchend') e.preventDefault(); // clickの二重発火防止
     const act = a.dataset.action;
     if(act==='back') goTab('home');
     else if(act==='start') startSession();
     else if(act==='save') saveToArc();
     else if(act==='excel') generateExcel();
     else if(act==='pdf') printAsPdf();
-  });
+  }
+  document.getElementById('botbar').addEventListener('click', handleBotbarAction);
+  document.getElementById('botbar').addEventListener('touchend', handleBotbarAction, {passive:false});
 
   // Sheet header inputs (delegated)
   document.getElementById('sh-hdr').addEventListener('input', e=>{
