@@ -1343,9 +1343,14 @@ function renderPreviewGrid(srcs){
   const grid=document.getElementById('prev-grid'); grid.innerHTML='';
 
   const {side, idx} = _photoCtx;
-  // 左右交互スロット設計
-  const startFlat = idx * 2 + (side === 'right' ? 1 : 0);
-  const cellNames = ['左①','右①','左②','右②','左③','右③','左④','右④'];
+  // 片側縦積み設計（placePhotosと一致）
+  // 左タップ: 左①→左②→左③→左④→次シート左①→...
+  // 右タップ: 右①→右②→右③→右④→次シート右①→...
+  const sideLabel = side === 'right' ? '右' : '左';
+  const nums = ['①','②','③','④'];
+  const startRowIdx = session.rows.findIndex(r => r.id === _photoCtx.rid);
+  const slotsPerSide = 4;
+  const startSlot = startRowIdx * slotsPerSide + idx;
 
   srcs.forEach((src, fi)=>{
     const orderPos = _previewOrder.indexOf(fi);
@@ -1358,11 +1363,13 @@ function renderPreviewGrid(srcs){
     num.textContent = orderPos + 1;
     thumb.appendChild(num);
 
-    // 行き先セル名（上書き込みで表示）
-    const targetFlat = (startFlat + orderPos) % 8;
-    const cellLbl = document.createElement('div');
+    // 行き先セル名（片側縦積みで計算）
+    const absSlot   = startSlot + orderPos;
+    const sheetNum  = Math.floor(absSlot / slotsPerSide) + 1;
+    const slotNum   = absSlot % slotsPerSide;
+    const cellLbl   = document.createElement('div');
     cellLbl.style.cssText = 'position:absolute;bottom:0;left:0;right:0;background:rgba(27,58,107,.8);color:#fff;font-size:9px;font-weight:700;text-align:center;padding:2px;';
-    cellLbl.textContent = '→ ' + cellNames[targetFlat];
+    cellLbl.textContent = (sheetNum > 1 ? `No${sheetNum} ` : '') + sideLabel + nums[slotNum];
     thumb.appendChild(cellLbl);
 
     thumb.addEventListener('click', ()=> swapOrder(fi, srcs));
@@ -1570,15 +1577,14 @@ function delTmpl(type,i){
 }
 
 // ─── ARCHIVE ─────────────────────────────────────────
-async function saveToArc(){
+async function saveToArc(silent=false){
   if(!session) return;
   session.savedAt = new Date().toISOString();
   const snap = JSON.parse(JSON.stringify(session));
   try {
     await dbSave(snap);
-    // メモリ上のarchivesも更新
     archives = await dbGetAll();
-    showToast('💾 保存しました','ok');
+    if(!silent) showToast('💾 保存しました','ok');
   } catch(e){
     console.error('保存エラー:', e);
     showToast('❌ 保存に失敗しました');
@@ -1590,9 +1596,9 @@ async function printAsPdf(){
   if(!session||!session.rows.length){ showToast('⚠️ データがありません'); return; }
 
   const d = (session.date||'').replace(/-/g,'');
-  const owner = session.owner||'物件';
-  const type = session.type||'';
-  const suggestedName = `【是正完了】${d}_${owner}_指摘写真_${type}`;
+  const owner = (session.owner||'物件').trim();
+  const type = (session.type||'').trim();
+  const suggestedName = `【当日是正完了】${d}_${owner}_指摘写真_${type}.pdf`;
 
   // iOS PWAモード（standalone）ではwindow.print()が動作しない
   // → Safariで開くよう案内するトースト＋URLをコピー
@@ -1600,15 +1606,15 @@ async function printAsPdf(){
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches
                     || window.navigator.standalone === true;
 
+  // オーバーレイを全部閉じてからシートタブへ
+  document.querySelectorAll('.ov.on').forEach(o => o.classList.remove('on'));
   goTab('sheet');
+  await saveToArc(true); // 自動保存（トーストなし）
 
   if(isIOS && isStandalone){
-    // PWAモード：Safariで開くよう案内
     showToast('📋 SafariでこのURLを開いてPDF出力してください', 'warn', 5000);
-    // URLをクリップボードにコピー
     try {
       await navigator.clipboard.writeText(location.href);
-      showToast('🔗 URLをコピーしました。Safariで開いてください', 'warn', 5000);
     } catch(e) {}
     return;
   }
@@ -1810,7 +1816,7 @@ async function generateExcel(){
     });
     const d     = (session.date||'').replace(/-/g,'');
     const fname = d + '_' + ownerStr + '_指摘写真_' + typeStr + '.xlsx';
-    await saveToArc();
+    await saveToArc(true); // 自動保存（トーストなし）
     await shareOrDownloadBlob(blob, fname);
 
   } catch(err){
