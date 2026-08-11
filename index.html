@@ -1750,7 +1750,7 @@ async function generateExcel(){
                      nativeColOff: Math.floor(offX / CELL_W_PX * CELL_W_EMU),
                      nativeRowOff: Math.floor(offY / CELL_H_PX * CELL_H_EMU) },
               ext: { width: iw, height: ih },
-              editAs: 'oneCell'
+              editAs: 'absolute'
             });
           } catch(e){ lCell.value = '（写真エラー）'; }
         }
@@ -1776,7 +1776,7 @@ async function generateExcel(){
                      nativeColOff: Math.floor(offX2 / CELL_W_PX * CELL_W_EMU),
                      nativeRowOff: Math.floor(offY2 / CELL_H_PX * CELL_H_EMU) },
               ext: { width: iw2, height: ih2 },
-              editAs: 'oneCell'
+              editAs: 'absolute'
             });
           } catch(e){ rCell.value = '（写真エラー）'; }
         } else if(rText){
